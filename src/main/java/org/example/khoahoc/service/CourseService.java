@@ -1,0 +1,79 @@
+package org.example.khoahoc.service;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.example.khoahoc.dto.request.CourseCreationRequest;
+import org.example.khoahoc.dto.request.CourseUpdateRequest;
+import org.example.khoahoc.dto.response.CourseResponse;
+import org.example.khoahoc.entity.Course;
+import org.example.khoahoc.exception.AppException;
+import org.example.khoahoc.exception.ErrorCode;
+import org.example.khoahoc.repository.CourseRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
+public class CourseService {
+
+    CourseRepository courseRepository;
+
+    public CourseResponse createCourse(CourseCreationRequest request) {
+        log.info("Creating new course with title: {}", request.getTitle());
+
+        Course course = Course.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .price(request.getPrice())
+                .build();
+
+        course = courseRepository.save(course);
+        return mapToResponse(course);
+    }
+
+    public CourseResponse getCourse(Long id) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+        return mapToResponse(course);
+    }
+
+    public List<CourseResponse> getAllCourses() {
+        return courseRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public CourseResponse updateCourse(Long id, CourseUpdateRequest request) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+
+        if (request.getTitle() != null) course.setTitle(request.getTitle());
+        if (request.getDescription() != null) course.setDescription(request.getDescription());
+        if (request.getPrice() != null) course.setPrice(request.getPrice());
+
+        course = courseRepository.save(course);
+        return mapToResponse(course);
+    }
+
+    public void deleteCourse(Long id) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+        courseRepository.delete(course);
+    }
+
+    private CourseResponse mapToResponse(Course course) {
+        return CourseResponse.builder()
+                .courseId(course.getCourseId())
+                .title(course.getTitle())
+                .description(course.getDescription())
+                .price(course.getPrice())
+                .createdDate(course.getCreatedDate())
+                .build();
+    }
+}

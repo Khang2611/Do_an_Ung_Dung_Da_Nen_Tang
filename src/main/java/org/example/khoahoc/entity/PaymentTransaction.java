@@ -1,0 +1,48 @@
+package org.example.khoahoc.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+import java.time.LocalDateTime;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@Table(name = "payment_transaction")
+public class PaymentTransaction {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "transaction_id")
+    Long transactionId;
+
+    @Column(name = "order_id", nullable = false)
+    Long orderId;
+
+    @Column(name = "amount", nullable = false)
+    Double amount;
+
+    @Column(name = "payment_method", length = 50)
+    String paymentMethod; // e.g. VNPAY, MOMO, STRIPE
+
+    @Column(name = "transaction_ref", length = 100)
+    String transactionRef; // e.g. transaction ID from the gateway
+
+    @Column(name = "status", length = 50)
+    String status; // e.g. SUCCESS, FAILED, PENDING
+
+    @Column(name = "created_date")
+    LocalDateTime createdDate;
+
+    @PrePersist
+    protected void onCreate() {
+        createdDate = LocalDateTime.now();
+        if (status == null) {
+            status = "PENDING";
+        }
+    }
+}
