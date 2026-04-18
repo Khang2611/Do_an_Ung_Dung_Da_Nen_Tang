@@ -9,6 +9,7 @@ import org.example.khoahoc.dto.response.ApiResponse;
 import org.example.khoahoc.dto.response.TransactionItemResponse;
 import org.example.khoahoc.service.TransactionItemService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,51 +22,58 @@ public class TransactionItemController {
 
     TransactionItemService transactionItemService;
 
+    // USER tạo mục giao dịch (các khóa học trong đơn), ADMIN cũng có thể
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<ApiResponse<TransactionItemResponse>> createTransactionItem(@RequestBody TransactionItemCreationRequest request) {
-        TransactionItemResponse response = transactionItemService.createTransactionItem(request);
-        
-        ApiResponse<TransactionItemResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setCode(200);
-        apiResponse.setMessage("Tạo mục giao dịch thành công.");
-        apiResponse.setResult(response);
-        
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<TransactionItemResponse>builder()
+                .code(200)
+                .message("Tạo mục giao dịch thành công.")
+                .result(transactionItemService.createTransactionItem(request))
+                .build());
     }
 
+    // Chỉ ADMIN xem toàn bộ
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<TransactionItemResponse>>> getAllTransactionItems() {
-        ApiResponse<List<TransactionItemResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(transactionItemService.getAllTransactionItems());
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<List<TransactionItemResponse>>builder()
+                .result(transactionItemService.getAllTransactionItems())
+                .build());
     }
 
+    // USER/ADMIN xem mục giao dịch theo transactionId
     @GetMapping("/transaction/{transactionId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<ApiResponse<List<TransactionItemResponse>>> getTransactionItemsByTransactionId(@PathVariable Long transactionId) {
-        ApiResponse<List<TransactionItemResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(transactionItemService.getTransactionItemsByTransactionId(transactionId));
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<List<TransactionItemResponse>>builder()
+                .result(transactionItemService.getTransactionItemsByTransactionId(transactionId))
+                .build());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<ApiResponse<TransactionItemResponse>> getTransactionItem(@PathVariable Long id) {
-        ApiResponse<TransactionItemResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(transactionItemService.getTransactionItem(id));
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<TransactionItemResponse>builder()
+                .result(transactionItemService.getTransactionItem(id))
+                .build());
     }
 
+    // Chỉ ADMIN mới được sửa/xóa mục giao dịch
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<TransactionItemResponse>> updateTransactionItem(@PathVariable Long id, @RequestBody TransactionItemUpdateRequest request) {
-        ApiResponse<TransactionItemResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(transactionItemService.updateTransactionItem(id, request));
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<TransactionItemResponse>builder()
+                .result(transactionItemService.updateTransactionItem(id, request))
+                .build());
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteTransactionItem(@PathVariable Long id) {
         transactionItemService.deleteTransactionItem(id);
-        ApiResponse<Void> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage("Xóa mục giao dịch thành công.");
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .message("Xóa mục giao dịch thành công.")
+                .build());
     }
 }

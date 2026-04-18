@@ -28,10 +28,12 @@ public class PaymentTransactionService {
         log.info("Creating new payment transaction for orderId: {}", request.getOrderId());
 
         PaymentTransaction transaction = PaymentTransaction.builder()
+                .userId(request.getUserId())
                 .orderId(request.getOrderId())
                 .amount(request.getAmount())
                 .paymentMethod(request.getPaymentMethod())
                 .transactionRef(request.getTransactionRef())
+                .ipAddress(request.getIpAddress())
                 .build();
 
         transaction = paymentTransactionRepository.save(transaction);
@@ -76,11 +78,13 @@ public class PaymentTransactionService {
     private PaymentTransactionResponse mapToResponse(PaymentTransaction transaction) {
         return PaymentTransactionResponse.builder()
                 .transactionId(transaction.getTransactionId())
+                .userId(transaction.getUserId())
                 .orderId(transaction.getOrderId())
                 .amount(transaction.getAmount())
                 .paymentMethod(transaction.getPaymentMethod())
                 .transactionRef(transaction.getTransactionRef())
                 .status(transaction.getStatus())
+                .ipAddress(transaction.getIpAddress())
                 .createdDate(transaction.getCreatedDate())
                 .build();
     }

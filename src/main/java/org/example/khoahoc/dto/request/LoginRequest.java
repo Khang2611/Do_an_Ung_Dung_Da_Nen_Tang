@@ -8,11 +8,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class PaymentTransactionCreationRequest {
-    Long userId;
-    Long orderId;
-    Double amount;
-    String paymentMethod;
-    String transactionRef;
-    String ipAddress;
+public class LoginRequest {
+    String username;
+    String password;
 }

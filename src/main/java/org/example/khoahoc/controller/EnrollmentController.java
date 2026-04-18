@@ -9,6 +9,7 @@ import org.example.khoahoc.dto.response.ApiResponse;
 import org.example.khoahoc.dto.response.EnrollmentResponse;
 import org.example.khoahoc.service.EnrollmentService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,58 +22,67 @@ public class EnrollmentController {
 
     EnrollmentService enrollmentService;
 
+    // USER tự đăng ký khóa học, ADMIN cũng có thể tạo
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<ApiResponse<EnrollmentResponse>> createEnrollment(@RequestBody EnrollmentCreationRequest request) {
-        EnrollmentResponse response = enrollmentService.createEnrollment(request);
-        
-        ApiResponse<EnrollmentResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setCode(200);
-        apiResponse.setMessage("Tạo đăng ký khóa học thành công.");
-        apiResponse.setResult(response);
-        
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<EnrollmentResponse>builder()
+                .code(200)
+                .message("Tạo đăng ký khóa học thành công.")
+                .result(enrollmentService.createEnrollment(request))
+                .build());
     }
 
+    // Chỉ ADMIN xem toàn bộ enrollment
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<EnrollmentResponse>>> getAllEnrollments() {
-        ApiResponse<List<EnrollmentResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(enrollmentService.getAllEnrollments());
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<List<EnrollmentResponse>>builder()
+                .result(enrollmentService.getAllEnrollments())
+                .build());
     }
 
+    // USER/ADMIN có thể xem enrollment theo userId
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<ApiResponse<List<EnrollmentResponse>>> getEnrollmentsByUserId(@PathVariable Long userId) {
-        ApiResponse<List<EnrollmentResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(enrollmentService.getEnrollmentsByUserId(userId));
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<List<EnrollmentResponse>>builder()
+                .result(enrollmentService.getEnrollmentsByUserId(userId))
+                .build());
     }
 
+    // ADMIN và TEACHER xem enrollment theo courseId
     @GetMapping("/course/{courseId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<List<EnrollmentResponse>>> getEnrollmentsByCourseId(@PathVariable Long courseId) {
-        ApiResponse<List<EnrollmentResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(enrollmentService.getEnrollmentsByCourseId(courseId));
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<List<EnrollmentResponse>>builder()
+                .result(enrollmentService.getEnrollmentsByCourseId(courseId))
+                .build());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<ApiResponse<EnrollmentResponse>> getEnrollment(@PathVariable Long id) {
-        ApiResponse<EnrollmentResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(enrollmentService.getEnrollment(id));
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<EnrollmentResponse>builder()
+                .result(enrollmentService.getEnrollment(id))
+                .build());
     }
 
+    // Chỉ ADMIN mới được cập nhật/xóa enrollment
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<EnrollmentResponse>> updateEnrollment(@PathVariable Long id, @RequestBody EnrollmentUpdateRequest request) {
-        ApiResponse<EnrollmentResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(enrollmentService.updateEnrollment(id, request));
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<EnrollmentResponse>builder()
+                .result(enrollmentService.updateEnrollment(id, request))
+                .build());
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteEnrollment(@PathVariable Long id) {
         enrollmentService.deleteEnrollment(id);
-        ApiResponse<Void> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage("Xóa đăng ký khóa học thành công.");
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .message("Xóa đăng ký khóa học thành công.")
+                .build());
     }
 }

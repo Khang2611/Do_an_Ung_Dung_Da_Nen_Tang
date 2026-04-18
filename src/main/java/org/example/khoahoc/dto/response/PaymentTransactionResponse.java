@@ -11,10 +11,12 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PaymentTransactionResponse {
     Long transactionId;
+    Long userId;
     Long orderId;
     Double amount;
     String paymentMethod;
     String transactionRef;
     String status;
+    String ipAddress;
     LocalDateTime createdDate;
 }

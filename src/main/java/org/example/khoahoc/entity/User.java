@@ -3,6 +3,8 @@ package org.example.khoahoc.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.example.khoahoc.enums.Role;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,7 +16,7 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(name = "user")
 public class User {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
@@ -31,6 +33,11 @@ public class User {
 
     @Column(name = "full_name")
     String fullName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    @Builder.Default
+    Role role = Role.USER;
 
     @Column(name = "created_date")
     LocalDateTime createdDate;

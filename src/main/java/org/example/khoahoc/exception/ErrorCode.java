@@ -16,7 +16,8 @@ public enum ErrorCode {
     PAYMENT_TRANSACTION_NOT_FOUND(1009, "Giao dịch thanh toán không tồn tại"),
     TRANSACTION_ITEM_NOT_FOUND(1010, "Mục giao dịch không tồn tại"),
     ENROLLMENT_NOT_FOUND(1011, "Đăng ký khóa học không tồn tại"),
-    LEARNING_PROGRESS_NOT_FOUND(1012, "Tiến độ học tập không tồn tại");
+    LEARNING_PROGRESS_NOT_FOUND(1012, "Tiến độ học tập không tồn tại"),
+    INVALID_CREDENTIALS(1013, "Tên đăng nhập hoặc mật khẩu không đúng");
 
     private final int code;
     private final String message;

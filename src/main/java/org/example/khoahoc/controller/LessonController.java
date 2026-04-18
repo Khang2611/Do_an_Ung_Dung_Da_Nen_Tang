@@ -9,6 +9,7 @@ import org.example.khoahoc.dto.response.ApiResponse;
 import org.example.khoahoc.dto.response.LessonResponse;
 import org.example.khoahoc.service.LessonService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,51 +22,57 @@ public class LessonController {
 
     LessonService lessonService;
 
+    // ADMIN và TEACHER mới được tạo bài học
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<LessonResponse>> createLesson(@RequestBody LessonCreationRequest request) {
-        LessonResponse response = lessonService.createLesson(request);
-        
-        ApiResponse<LessonResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setCode(200);
-        apiResponse.setMessage("Tạo bài học thành công.");
-        apiResponse.setResult(response);
-        
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<LessonResponse>builder()
+                .code(200)
+                .message("Tạo bài học thành công.")
+                .result(lessonService.createLesson(request))
+                .build());
     }
 
+    // Tất cả người dùng đã đăng nhập đều xem được
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<List<LessonResponse>>> getAllLessons() {
-        ApiResponse<List<LessonResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(lessonService.getAllLessons());
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<List<LessonResponse>>builder()
+                .result(lessonService.getAllLessons())
+                .build());
     }
 
     @GetMapping("/chapter/{chapterId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<List<LessonResponse>>> getLessonsByChapterId(@PathVariable Long chapterId) {
-        ApiResponse<List<LessonResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(lessonService.getLessonsByChapterId(chapterId));
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<List<LessonResponse>>builder()
+                .result(lessonService.getLessonsByChapterId(chapterId))
+                .build());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<LessonResponse>> getLesson(@PathVariable Long id) {
-        ApiResponse<LessonResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(lessonService.getLesson(id));
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<LessonResponse>builder()
+                .result(lessonService.getLesson(id))
+                .build());
     }
 
+    // ADMIN và TEACHER mới được sửa/xóa bài học
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<LessonResponse>> updateLesson(@PathVariable Long id, @RequestBody LessonUpdateRequest request) {
-        ApiResponse<LessonResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(lessonService.updateLesson(id, request));
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<LessonResponse>builder()
+                .result(lessonService.updateLesson(id, request))
+                .build());
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteLesson(@PathVariable Long id) {
         lessonService.deleteLesson(id);
-        ApiResponse<Void> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage("Xóa bài học thành công.");
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .message("Xóa bài học thành công.")
+                .build());
     }
 }

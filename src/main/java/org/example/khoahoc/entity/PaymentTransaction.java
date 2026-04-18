@@ -20,14 +20,20 @@ public class PaymentTransaction {
     @Column(name = "transaction_id")
     Long transactionId;
 
+    @Column(name = "user_id", nullable = false)
+    Long userId;
+
     @Column(name = "order_id", nullable = false)
-    Long orderId;
+    Long orderId; // Có thể coi đây là ID của khóa học đang thanh toán, hoặc mã giỏ hàng.
 
     @Column(name = "amount", nullable = false)
     Double amount;
 
     @Column(name = "payment_method", length = 50)
     String paymentMethod; // e.g. VNPAY, MOMO, STRIPE
+
+    @Column(name = "ip_address", length = 50)
+    String ipAddress;
 
     @Column(name = "transaction_ref", length = 100)
     String transactionRef; // e.g. transaction ID from the gateway

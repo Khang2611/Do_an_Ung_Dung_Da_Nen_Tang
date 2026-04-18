@@ -9,6 +9,7 @@ import org.example.khoahoc.dto.response.ApiResponse;
 import org.example.khoahoc.dto.response.UserResponse;
 import org.example.khoahoc.service.UserService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,44 +22,50 @@ public class UserController {
 
     UserService userService;
 
+    // Ai cũng có thể đăng ký (đã permit trong SecurityConfig)
     @PostMapping
     public ResponseEntity<ApiResponse<UserResponse>> createUser(@RequestBody UserCreationRequest request) {
-        UserResponse response = userService.createUser(request);
-        
-        ApiResponse<UserResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setCode(200);
-        apiResponse.setMessage("Tạo người dùng thành công.");
-        apiResponse.setResult(response);
-        
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
+                .code(200)
+                .message("Tạo người dùng thành công.")
+                .result(userService.createUser(request))
+                .build());
     }
 
+    // Chỉ ADMIN mới được xem danh sách toàn bộ user
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
-        ApiResponse<List<UserResponse>> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(userService.getAllUsers());
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<List<UserResponse>>builder()
+                .result(userService.getAllUsers())
+                .build());
     }
 
+    // ADMIN và chính user đó mới được xem
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable Long id) {
-        ApiResponse<UserResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(userService.getUser(id));
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
+                .result(userService.getUser(id))
+                .build());
     }
 
+    // Chỉ ADMIN mới được cập nhật user khác
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> updateUser(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
-        ApiResponse<UserResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(userService.updateUser(id, request));
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
+                .result(userService.updateUser(id, request))
+                .build());
     }
 
+    // Chỉ ADMIN mới được xóa user
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
-        ApiResponse<Void> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage("Xóa người dùng thành công.");
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .message("Xóa người dùng thành công.")
+                .build());
     }
 }
