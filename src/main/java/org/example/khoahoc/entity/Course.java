@@ -32,6 +32,10 @@ public class Course {
     @Column(name = "created_date")
     LocalDateTime createdDate;
 
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    Category category;
+
     @PrePersist
     protected void onCreate() {
         createdDate = LocalDateTime.now();

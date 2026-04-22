@@ -12,4 +12,5 @@ public class CourseUpdateRequest {
     String title;
     String description;
     Double price;
+    Long categoryId;
 }

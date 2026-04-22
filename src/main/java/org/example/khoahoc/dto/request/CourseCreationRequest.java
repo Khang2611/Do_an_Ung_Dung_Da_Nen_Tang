@@ -12,4 +12,5 @@ public class CourseCreationRequest {
     String title;
     String description;
     Double price;
+    Long categoryId;
 }

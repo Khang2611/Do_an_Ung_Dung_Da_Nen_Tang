@@ -15,4 +15,5 @@ public class CourseResponse {
     String description;
     Double price;
     LocalDateTime createdDate;
+    CategoryResponse category;
 }

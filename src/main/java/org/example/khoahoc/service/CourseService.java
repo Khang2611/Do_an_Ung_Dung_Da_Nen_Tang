@@ -6,10 +6,13 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.example.khoahoc.dto.request.CourseCreationRequest;
 import org.example.khoahoc.dto.request.CourseUpdateRequest;
+import org.example.khoahoc.dto.response.CategoryResponse;
 import org.example.khoahoc.dto.response.CourseResponse;
+import org.example.khoahoc.entity.Category;
 import org.example.khoahoc.entity.Course;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
+import org.example.khoahoc.repository.CategoryRepository;
 import org.example.khoahoc.repository.CourseRepository;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +26,7 @@ import java.util.stream.Collectors;
 public class CourseService {
 
     CourseRepository courseRepository;
+    CategoryRepository categoryRepository;
 
     public CourseResponse createCourse(CourseCreationRequest request) {
         log.info("Creating new course with title: {}", request.getTitle());
@@ -32,6 +36,12 @@ public class CourseService {
                 .description(request.getDescription())
                 .price(request.getPrice())
                 .build();
+
+        if (request.getCategoryId() != null) {
+            Category category = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+            course.setCategory(category);
+        }
 
         course = courseRepository.save(course);
         return mapToResponse(course);
@@ -57,6 +67,12 @@ public class CourseService {
         if (request.getDescription() != null) course.setDescription(request.getDescription());
         if (request.getPrice() != null) course.setPrice(request.getPrice());
 
+        if (request.getCategoryId() != null) {
+            Category category = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+            course.setCategory(category);
+        }
+
         course = courseRepository.save(course);
         return mapToResponse(course);
     }
@@ -68,12 +84,22 @@ public class CourseService {
     }
 
     private CourseResponse mapToResponse(Course course) {
-        return CourseResponse.builder()
+        CourseResponse response = CourseResponse.builder()
                 .courseId(course.getCourseId())
                 .title(course.getTitle())
                 .description(course.getDescription())
                 .price(course.getPrice())
                 .createdDate(course.getCreatedDate())
                 .build();
+
+        if (course.getCategory() != null) {
+            response.setCategory(CategoryResponse.builder()
+                    .categoryId(course.getCategory().getCategoryId())
+                    .name(course.getCategory().getName())
+                    .createdDate(course.getCategory().getCreatedDate())
+                    .build());
+        }
+
+        return response;
     }
 }
