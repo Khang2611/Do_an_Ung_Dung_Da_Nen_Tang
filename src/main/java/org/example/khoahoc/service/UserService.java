@@ -8,6 +8,7 @@ import org.example.khoahoc.dto.request.UserCreationRequest;
 import org.example.khoahoc.dto.request.UserUpdateRequest;
 import org.example.khoahoc.dto.response.UserResponse;
 import org.example.khoahoc.entity.User;
+import org.example.khoahoc.enums.Role;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
 import org.example.khoahoc.repository.UserRepository;
@@ -33,11 +34,27 @@ public class UserService {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
+        Role userRole = Role.USER;
+        if (request.getRole() != null && !request.getRole().isEmpty()) {
+            try {
+                Role requestedRole = Role.valueOf(request.getRole().toUpperCase());
+                // Không cho phép tự đăng ký quyền ADMIN qua API public
+                if (requestedRole == Role.ADMIN) {
+                    throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION); // Hoặc bạn có thể dùng mã lỗi custom "UNAUTHORIZED_ROLE"
+                }
+                userRole = requestedRole;
+            } catch (IllegalArgumentException e) {
+                // Nếu truyền string tào lao thì mặc định vẫn là USER
+                userRole = Role.USER;
+            }
+        }
+
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
                 .fullName(request.getFullName())
+                .role(userRole)
                 .build();
 
         user = userRepository.save(user);
@@ -64,6 +81,16 @@ public class UserService {
         if (request.getEmail() != null) user.setEmail(request.getEmail());
         if (request.getFullName() != null) user.setFullName(request.getFullName());
 
+        if (request.getRole() != null && !request.getRole().isEmpty()) {
+            try {
+                Role newRole = Role.valueOf(request.getRole().toUpperCase());
+                user.setRole(newRole);
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid role provided during iteration: {}", request.getRole());
+                throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+            }
+        }
+
         user = userRepository.save(user);
         return mapToResponse(user);
     }
@@ -80,6 +107,7 @@ public class UserService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
+                .role(user.getRole() != null ? user.getRole().name() : null)
                 .createdDate(user.getCreatedDate())
                 .build();
     }
