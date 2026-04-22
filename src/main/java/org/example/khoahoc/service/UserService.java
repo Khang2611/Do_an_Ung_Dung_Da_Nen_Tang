@@ -11,6 +11,7 @@ import org.example.khoahoc.entity.User;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
 import org.example.khoahoc.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     UserRepository userRepository;
+    PasswordEncoder passwordEncoder;
 
     public UserResponse createUser(UserCreationRequest request) {
         log.info("Creating new user with username: {}", request.getUsername());
@@ -33,7 +35,7 @@ public class UserService {
 
         User user = User.builder()
                 .username(request.getUsername())
-                .password(request.getPassword()) // Note: Cần encode mật khẩu ở môi trường thực tế
+                .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
                 .fullName(request.getFullName())
                 .build();
@@ -58,7 +60,7 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        if (request.getPassword() != null) user.setPassword(request.getPassword());
+        if (request.getPassword() != null) user.setPassword(passwordEncoder.encode(request.getPassword()));
         if (request.getEmail() != null) user.setEmail(request.getEmail());
         if (request.getFullName() != null) user.setFullName(request.getFullName());
 

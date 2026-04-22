@@ -12,6 +12,7 @@ import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
 import org.example.khoahoc.repository.UserRepository;
 import org.example.khoahoc.security.JwtTokenProvider;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -23,6 +24,7 @@ public class AuthService {
     UserRepository userRepository;
     JwtTokenProvider jwtTokenProvider;
     JwtProperties jwtProperties;
+    PasswordEncoder passwordEncoder;
 
     /**
      * Xác thực tên đăng nhập và mật khẩu, trả về JWT token nếu hợp lệ.
@@ -37,8 +39,8 @@ public class AuthService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_CREDENTIALS));
 
-        // 2. Kiểm tra mật khẩu (plain text — sẽ dùng BCrypt khi có PasswordEncoder)
-        if (!request.getPassword().equals(user.getPassword())) {
+        // 2. Kiểm tra mật khẩu bằng PasswordEncoder
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
 

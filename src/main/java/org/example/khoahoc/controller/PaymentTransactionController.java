@@ -11,8 +11,6 @@ import org.example.khoahoc.service.PaymentTransactionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
@@ -31,7 +29,7 @@ public class PaymentTransactionController {
     public ResponseEntity<ApiResponse<PaymentTransactionResponse>> createTransaction(
             @RequestBody PaymentTransactionCreationRequest request,
             HttpServletRequest httpRequest) {
-        
+
         // Lấy IP Address từ request
         String ipAddress = httpRequest.getHeader("X-Forwarded-For");
         if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
@@ -58,7 +56,8 @@ public class PaymentTransactionController {
     // ADMIN xem giao dịch theo orderId
     @GetMapping("/order/{orderId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<PaymentTransactionResponse>>> getTransactionsByOrderId(@PathVariable Long orderId) {
+    public ResponseEntity<ApiResponse<List<PaymentTransactionResponse>>> getTransactionsByOrderId(
+            @PathVariable Long orderId) {
         return ResponseEntity.ok(ApiResponse.<List<PaymentTransactionResponse>>builder()
                 .result(paymentTransactionService.getTransactionsByOrderId(orderId))
                 .build());
@@ -76,7 +75,8 @@ public class PaymentTransactionController {
     // Chỉ ADMIN mới được sửa/xóa giao dịch
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<PaymentTransactionResponse>> updateTransaction(@PathVariable Long id, @RequestBody PaymentTransactionUpdateRequest request) {
+    public ResponseEntity<ApiResponse<PaymentTransactionResponse>> updateTransaction(@PathVariable Long id,
+            @RequestBody PaymentTransactionUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.<PaymentTransactionResponse>builder()
                 .result(paymentTransactionService.updateTransaction(id, request))
                 .build());

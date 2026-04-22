@@ -34,7 +34,7 @@ public class SecurityConfig {
 
             .authorizeHttpRequests(auth -> auth
                 // Public: đăng ký tài khoản và đăng nhập
-                .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 // Public Webhook: Nhận callback từ 3rd party payment, xác thực bằng API/Secret key
                 .requestMatchers(HttpMethod.POST, "/api/webhook/payment").permitAll()

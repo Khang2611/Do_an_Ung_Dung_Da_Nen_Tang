@@ -10,7 +10,6 @@ import org.example.khoahoc.dto.request.WebhookCallbackRequest;
 import org.example.khoahoc.dto.response.PaymentTransactionResponse;
 import org.example.khoahoc.entity.TransactionItem;
 import org.example.khoahoc.exception.AppException;
-import org.example.khoahoc.exception.ErrorCode;
 import org.example.khoahoc.repository.TransactionItemRepository;
 import org.example.khoahoc.service.EnrollmentService;
 import org.example.khoahoc.service.PaymentTransactionService;
@@ -48,7 +47,8 @@ public class PaymentWebhookController {
             @RequestHeader(value = "X-Secret-Key", required = false) String requestSecretKey,
             @RequestBody WebhookCallbackRequest request) {
 
-        log.info("Nhận webhook callback cho transactionId: {}, status: {}", request.getTransactionId(), request.getStatus());
+        log.info("Nhận webhook callback cho transactionId: {}, status: {}", request.getTransactionId(),
+                request.getStatus());
 
         // 1. Xác thực 2 keys đồng nhất
         if (requestApiKey == null || requestSecretKey == null ||
@@ -64,8 +64,7 @@ public class PaymentWebhookController {
                     .transactionRef(request.getTransactionRef())
                     .build();
             PaymentTransactionResponse updatedTransaction = paymentTransactionService.updateTransaction(
-                    request.getTransactionId(), updateRequest
-            );
+                    request.getTransactionId(), updateRequest);
 
             // 3. Nếu SUCCESS -> Thực hiện tạo Enrollment cho các khóa học tương ứng
             if ("SUCCESS".equalsIgnoreCase(request.getStatus())) {
@@ -76,7 +75,8 @@ public class PaymentWebhookController {
                             .courseId(item.getCourseId())
                             .build();
                     enrollmentService.createEnrollment(enrollmentRequest);
-                    log.info("Tạo thành công Enrollment - UserId: {}, CourseId: {}", updatedTransaction.getUserId(), item.getCourseId());
+                    log.info("Tạo thành công Enrollment - UserId: {}, CourseId: {}", updatedTransaction.getUserId(),
+                            item.getCourseId());
                 }
             }
 

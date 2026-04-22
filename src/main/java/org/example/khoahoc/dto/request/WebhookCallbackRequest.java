@@ -14,6 +14,6 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class WebhookCallbackRequest {
     Long transactionId;
-    String transactionRef; // Mã giao dịch bên 3rd party
+    String transactionRef; // Mã giao dịch bên thứ 3 
     String status; // SUCCESS / FAILED
 }

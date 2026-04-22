@@ -3,7 +3,6 @@ package org.example.khoahoc.controller;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.example.khoahoc.dto.request.UserCreationRequest;
 import org.example.khoahoc.dto.request.UserUpdateRequest;
 import org.example.khoahoc.dto.response.ApiResponse;
 import org.example.khoahoc.dto.response.UserResponse;
@@ -22,17 +21,7 @@ public class UserController {
 
     UserService userService;
 
-    // Ai cũng có thể đăng ký (đã permit trong SecurityConfig)
-    @PostMapping
-    public ResponseEntity<ApiResponse<UserResponse>> createUser(@RequestBody UserCreationRequest request) {
-        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
-                .code(200)
-                .message("Tạo người dùng thành công.")
-                .result(userService.createUser(request))
-                .build());
-    }
 
-    // Chỉ ADMIN mới được xem danh sách toàn bộ user
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
