@@ -22,9 +22,9 @@ public class CategoryController {
 
     CategoryService categoryService;
 
-    // Chỉ ADMIN mới được tạo danh mục
+    // ADMIN, TEACHER mới được tạo danh mục
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(@RequestBody CategoryCreationRequest request) {
         return ResponseEntity.ok(ApiResponse.<CategoryResponse>builder()
                 .code(200)
@@ -50,17 +50,18 @@ public class CategoryController {
                 .build());
     }
 
-    // Chỉ ADMIN mới được cập nhật/xóa danh mục
+    // ADMIN , TEACHER mới được cập nhật/xóa danh mục
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(@PathVariable Long id, @RequestBody CategoryUpdateRequest request) {
+    @PreAuthorize("hasAnyRole('ADMIN' ,'TEACHER')")
+    public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(@PathVariable Long id,
+            @RequestBody CategoryUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.<CategoryResponse>builder()
                 .result(categoryService.updateCategory(id, request))
                 .build());
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return ResponseEntity.ok(ApiResponse.<Void>builder()
