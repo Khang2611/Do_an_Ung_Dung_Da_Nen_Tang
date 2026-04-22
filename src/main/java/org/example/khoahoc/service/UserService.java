@@ -73,20 +73,38 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    public UserResponse updateUser(Long id, UserUpdateRequest request) {
+    public UserResponse updateUserProfile(Long id, String authenticatedUsername, UserUpdateRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        if (request.getPassword() != null) user.setPassword(passwordEncoder.encode(request.getPassword()));
+        // Kiểm tra quyền sở hữu (chỉ cho phép cập nhật chính mình hoặc là ADMIN)
+        User currentUser = userRepository.findByUsername(authenticatedUsername)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                
+        if (!user.getUserId().equals(currentUser.getUserId()) && currentUser.getRole() != Role.ADMIN) {
+            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION); // Cần có mã lỗi UNAUTHORIZED thích hợp
+        }
+
+        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
         if (request.getEmail() != null) user.setEmail(request.getEmail());
         if (request.getFullName() != null) user.setFullName(request.getFullName());
 
-        if (request.getRole() != null && !request.getRole().isEmpty()) {
+        user = userRepository.save(user);
+        return mapToResponse(user);
+    }
+
+    public UserResponse updateUserRole(Long id, String role) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (role != null && !role.isEmpty()) {
             try {
-                Role newRole = Role.valueOf(request.getRole().toUpperCase());
+                Role newRole = Role.valueOf(role.toUpperCase());
                 user.setRole(newRole);
             } catch (IllegalArgumentException e) {
-                log.warn("Invalid role provided during iteration: {}", request.getRole());
+                log.warn("Invalid role provided: {}", role);
                 throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
             }
         }

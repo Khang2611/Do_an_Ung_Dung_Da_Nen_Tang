@@ -22,9 +22,9 @@ public class CourseController {
 
     CourseService courseService;
 
-    // ADMIN mới được tạo khóa học
+    // ADMIN , TEACHER mới được tạo khóa học
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN','TEACHER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ApiResponse<CourseResponse>> createCourse(@RequestBody CourseCreationRequest request) {
         return ResponseEntity.ok(ApiResponse.<CourseResponse>builder()
                 .code(200)
@@ -50,9 +50,9 @@ public class CourseController {
                 .build());
     }
 
-    // Chỉ ADMIN mới được sửa/xóa khóa học
+    // ADMIN , TEACHER mới được sửa/xóa khóa học
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN','TEACHER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ApiResponse<CourseResponse>> updateCourse(@PathVariable Long id,
             @RequestBody CourseUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.<CourseResponse>builder()
@@ -61,7 +61,7 @@ public class CourseController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN','TEACHER')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteCourse(@PathVariable Long id) {
         courseService.deleteCourse(id);
         return ResponseEntity.ok(ApiResponse.<Void>builder()

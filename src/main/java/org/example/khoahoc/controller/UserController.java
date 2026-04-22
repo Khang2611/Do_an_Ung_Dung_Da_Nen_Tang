@@ -3,12 +3,14 @@ package org.example.khoahoc.controller;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.example.khoahoc.dto.request.RoleUpdateRequest;
 import org.example.khoahoc.dto.request.UserUpdateRequest;
 import org.example.khoahoc.dto.response.ApiResponse;
 import org.example.khoahoc.dto.response.UserResponse;
 import org.example.khoahoc.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,12 +41,24 @@ public class UserController {
                 .build());
     }
 
-    // Chỉ ADMIN mới được cập nhật user khác
+    // Người dùng cập nhật thông tin cá nhân của chính họ (dựa trên ID và Token khớp nhau)
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponse>> updateUser(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
+    @PreAuthorize("hasAnyRole('USER', 'TEACHER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserProfile(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
-                .result(userService.updateUser(id, request))
+                .result(userService.updateUserProfile(id, username, request))
+                .message("Cập nhật thông tin cá nhân thành công.")
+                .build());
+    }
+
+    // Chỉ ADMIN mới được cập nhật quyền người dùng
+    @PatchMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(@PathVariable Long id, @RequestBody RoleUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
+                .result(userService.updateUserRole(id, request.getRole()))
+                .message("Cập nhật quyền thành công.")
                 .build());
     }
 
