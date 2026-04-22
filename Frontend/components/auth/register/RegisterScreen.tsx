@@ -1,17 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 
-import AuthScreenLayout from "../shared/AuthScreenLayout";
 import { REGISTER_ROLES, type RegisterRoleKey } from "./data";
 
 type FormErrors = {
@@ -96,216 +100,388 @@ export default function RegisterScreen() {
   };
 
   return (
-    <AuthScreenLayout
-      subtitle="Bat dau hanh trinh hoc cung EngPro voi vai tro phu hop."
-      title="Tao tai khoan moi"
-    >
-      <View style={styles.card}>
-        <Text style={styles.fieldLabel}>Toi la...</Text>
+    <View style={styles.screen}>
+      <LinearGradient
+        colors={["#FAFBFF", "#F4F7FF", "#EEF2FF"]}
+        end={{ x: 1, y: 1 }}
+        start={{ x: 0, y: 0 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={[styles.glow, styles.glowPrimary]} />
+      <View style={[styles.glow, styles.glowSecondary]} />
+      <View style={[styles.glow, styles.glowTertiary]} />
 
-        <View style={styles.roleRow}>
-          {REGISTER_ROLES.map((role) => {
-            const active = selectedRole === role.key;
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
 
-            return (
-              <Pressable
-                key={role.key}
-                onPress={() => handleRoleChange(role.key)}
-                style={[
-                  styles.roleCard,
-                  {
-                    backgroundColor: active ? role.fill : "#FFFFFF",
-                    borderColor: active ? role.accent : "#D8E0F2",
-                  },
-                ]}
-              >
-                <View style={styles.roleHeader}>
-                  <View style={[styles.roleIconWrap, { backgroundColor: `${role.accent}16` }]}>
-                    <Ionicons color={role.accent} name={role.icon as never} size={18} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.keyboardView}
+        >
+          <ScrollView
+            bounces={false}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.inner}>
+              <Link asChild href="/">
+                <Pressable style={styles.backButton}>
+                  <Ionicons color="#1E293B" name="arrow-back" size={22} />
+                </Pressable>
+              </Link>
+
+              <View style={styles.header}>
+                <View style={styles.brandRow}>
+                  <View style={styles.brandBadge}>
+                    <Ionicons color="#FFFFFF" name="school-outline" size={18} />
                   </View>
-                  {active ? (
-                    <Ionicons color={role.accent} name="checkmark-circle" size={20} />
+                  <Text style={styles.brandText}>
+                    Eng<Text style={styles.brandAccent}>Pro</Text>
+                  </Text>
+                </View>
+                <Text style={styles.title}>Tao tai khoan moi</Text>
+                <Text style={styles.subtitle}>
+                  Bat dau hanh trinh hoc cung EngPro voi vai tro phu hop.
+                </Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.fieldLabel}>Toi la...</Text>
+
+                <View style={styles.roleRow}>
+                  {REGISTER_ROLES.map((role) => {
+                    const active = selectedRole === role.key;
+
+                    return (
+                      <Pressable
+                        key={role.key}
+                        onPress={() => handleRoleChange(role.key)}
+                        style={[
+                          styles.roleCard,
+                          {
+                            backgroundColor: active ? role.fill : "#FFFFFF",
+                            borderColor: active ? role.accent : "#D8E0F2",
+                          },
+                        ]}
+                      >
+                        <View style={styles.roleHeader}>
+                          <View
+                            style={[
+                              styles.roleIconWrap,
+                              { backgroundColor: `${role.accent}16` },
+                            ]}
+                          >
+                            <Ionicons color={role.accent} name={role.icon as never} size={18} />
+                          </View>
+                          {active ? (
+                            <Ionicons color={role.accent} name="checkmark-circle" size={20} />
+                          ) : null}
+                        </View>
+
+                        <Text style={styles.roleTitle}>{role.title}</Text>
+                        <Text style={styles.roleDescription}>{role.description}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <View style={styles.infoCard}>
+                  <View style={styles.infoRow}>
+                    <Ionicons color="#F97316" name="sparkles-outline" size={16} />
+                    <Text style={styles.infoTitle}>Demo cho buoi thong 4</Text>
+                  </View>
+                  <Text style={styles.infoText}>
+                    Form nay da co validate co ban va submit demo de nhom co the
+                    trinh bay luong dang ky ma khong can backend that.
+                  </Text>
+                </View>
+
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Ho va ten</Text>
+                  <View style={[styles.inputShell, errors.fullName && styles.inputShellError]}>
+                    <Ionicons
+                      color="#9AA4B2"
+                      name="person-outline"
+                      size={18}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      onChangeText={setFullName}
+                      placeholder="Nguyen Van A"
+                      placeholderTextColor="#9AA4B2"
+                      style={styles.input}
+                      value={fullName}
+                    />
+                  </View>
+                  {errors.fullName ? (
+                    <Text style={styles.errorText}>{errors.fullName}</Text>
                   ) : null}
                 </View>
 
-                <Text style={styles.roleTitle}>{role.title}</Text>
-                <Text style={styles.roleDescription}>{role.description}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Email</Text>
+                  <View style={[styles.inputShell, errors.email && styles.inputShellError]}>
+                    <Ionicons
+                      color="#9AA4B2"
+                      name="mail-outline"
+                      size={18}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      autoCapitalize="none"
+                      autoComplete="email"
+                      keyboardType="email-address"
+                      onChangeText={setEmail}
+                      placeholder="your@email.com"
+                      placeholderTextColor="#9AA4B2"
+                      style={styles.input}
+                      value={email}
+                    />
+                  </View>
+                  {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+                </View>
 
-        <View style={styles.infoCard}>
-          <View style={styles.infoRow}>
-            <Ionicons color="#F97316" name="sparkles-outline" size={16} />
-            <Text style={styles.infoTitle}>Demo cho buoi thong 4</Text>
-          </View>
-          <Text style={styles.infoText}>
-            Form nay da co validate co ban va submit demo de nhom co the trinh bay
-            luong dang ky ma khong can backend that.
-          </Text>
-        </View>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Mat khau</Text>
+                  <View style={[styles.inputShell, errors.password && styles.inputShellError]}>
+                    <Ionicons
+                      color="#9AA4B2"
+                      name="lock-closed-outline"
+                      size={18}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      autoCapitalize="none"
+                      onChangeText={setPassword}
+                      placeholder="It nhat 6 ky tu"
+                      placeholderTextColor="#9AA4B2"
+                      secureTextEntry={!showPassword}
+                      style={styles.input}
+                      value={password}
+                    />
+                    <Pressable
+                      hitSlop={8}
+                      onPress={() => setShowPassword((value) => !value)}
+                      style={styles.visibilityButton}
+                    >
+                      <Ionicons
+                        color="#9AA4B2"
+                        name={showPassword ? "eye-off-outline" : "eye-outline"}
+                        size={18}
+                      />
+                    </Pressable>
+                  </View>
+                  {errors.password ? (
+                    <Text style={styles.errorText}>{errors.password}</Text>
+                  ) : null}
+                </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Ho va ten</Text>
-          <View style={[styles.inputShell, errors.fullName && styles.inputShellError]}>
-            <Ionicons
-              color="#9AA4B2"
-              name="person-outline"
-              size={18}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              onChangeText={setFullName}
-              placeholder="Nguyen Van A"
-              placeholderTextColor="#9AA4B2"
-              style={styles.input}
-              value={fullName}
-            />
-          </View>
-          {errors.fullName ? <Text style={styles.errorText}>{errors.fullName}</Text> : null}
-        </View>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.fieldLabel}>Xac nhan mat khau</Text>
+                  <View
+                    style={[styles.inputShell, errors.confirmPassword && styles.inputShellError]}
+                  >
+                    <Ionicons
+                      color="#9AA4B2"
+                      name="lock-closed-outline"
+                      size={18}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      autoCapitalize="none"
+                      onChangeText={setConfirmPassword}
+                      placeholder="Nhap lai mat khau"
+                      placeholderTextColor="#9AA4B2"
+                      secureTextEntry={!showConfirmPassword}
+                      style={styles.input}
+                      value={confirmPassword}
+                    />
+                    <Pressable
+                      hitSlop={8}
+                      onPress={() => setShowConfirmPassword((value) => !value)}
+                      style={styles.visibilityButton}
+                    >
+                      <Ionicons
+                        color="#9AA4B2"
+                        name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                        size={18}
+                      />
+                    </Pressable>
+                  </View>
+                  {errors.confirmPassword ? (
+                    <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+                  ) : null}
+                </View>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Email</Text>
-          <View style={[styles.inputShell, errors.email && styles.inputShellError]}>
-            <Ionicons
-              color="#9AA4B2"
-              name="mail-outline"
-              size={18}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-              onChangeText={setEmail}
-              placeholder="your@email.com"
-              placeholderTextColor="#9AA4B2"
-              style={styles.input}
-              value={email}
-            />
-          </View>
-          {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
-        </View>
+                {successMessage ? (
+                  <View style={styles.successCard}>
+                    <View style={styles.successHeader}>
+                      <Ionicons color="#16A34A" name="checkmark-circle" size={18} />
+                      <Text style={styles.successTitle}>Dang ky thanh cong</Text>
+                    </View>
+                    <Text style={styles.successText}>{successMessage}</Text>
+                  </View>
+                ) : null}
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Mat khau</Text>
-          <View style={[styles.inputShell, errors.password && styles.inputShellError]}>
-            <Ionicons
-              color="#9AA4B2"
-              name="lock-closed-outline"
-              size={18}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              autoCapitalize="none"
-              onChangeText={setPassword}
-              placeholder="It nhat 6 ky tu"
-              placeholderTextColor="#9AA4B2"
-              secureTextEntry={!showPassword}
-              style={styles.input}
-              value={password}
-            />
-            <Pressable
-              hitSlop={8}
-              onPress={() => setShowPassword((value) => !value)}
-              style={styles.visibilityButton}
-            >
-              <Ionicons
-                color="#9AA4B2"
-                name={showPassword ? "eye-off-outline" : "eye-outline"}
-                size={18}
-              />
-            </Pressable>
-          </View>
-          {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
-        </View>
+                <Pressable
+                  disabled={isSubmitting}
+                  onPress={handleSubmit}
+                  style={[styles.buttonWrapper, isSubmitting && styles.buttonWrapperDisabled]}
+                >
+                  <LinearGradient
+                    colors={["#356BFF", "#1E48E5"]}
+                    end={{ x: 1, y: 0.5 }}
+                    start={{ x: 0, y: 0.5 }}
+                    style={styles.button}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <ActivityIndicator color="#FFFFFF" size="small" />
+                        <Text style={styles.buttonText}>Dang xu ly...</Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.buttonText}>Dang ky</Text>
+                        <Ionicons color="#FFFFFF" name="chevron-forward" size={18} />
+                      </>
+                    )}
+                  </LinearGradient>
+                </Pressable>
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Xac nhan mat khau</Text>
-          <View style={[styles.inputShell, errors.confirmPassword && styles.inputShellError]}>
-            <Ionicons
-              color="#9AA4B2"
-              name="lock-closed-outline"
-              size={18}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              autoCapitalize="none"
-              onChangeText={setConfirmPassword}
-              placeholder="Nhap lai mat khau"
-              placeholderTextColor="#9AA4B2"
-              secureTextEntry={!showConfirmPassword}
-              style={styles.input}
-              value={confirmPassword}
-            />
-            <Pressable
-              hitSlop={8}
-              onPress={() => setShowConfirmPassword((value) => !value)}
-              style={styles.visibilityButton}
-            >
-              <Ionicons
-                color="#9AA4B2"
-                name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
-                size={18}
-              />
-            </Pressable>
-          </View>
-          {errors.confirmPassword ? (
-            <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-          ) : null}
-        </View>
-
-        {successMessage ? (
-          <View style={styles.successCard}>
-            <View style={styles.successHeader}>
-              <Ionicons color="#16A34A" name="checkmark-circle" size={18} />
-              <Text style={styles.successTitle}>Dang ky thanh cong</Text>
+                <View style={styles.loginRow}>
+                  <Text style={styles.loginText}>Da co tai khoan? </Text>
+                  <Link asChild href="/login">
+                    <Pressable>
+                      <Text style={styles.loginLink}>Dang nhap</Text>
+                    </Pressable>
+                  </Link>
+                </View>
+              </View>
             </View>
-            <Text style={styles.successText}>{successMessage}</Text>
-          </View>
-        ) : null}
-
-        <Pressable
-          disabled={isSubmitting}
-          onPress={handleSubmit}
-          style={[styles.buttonWrapper, isSubmitting && styles.buttonWrapperDisabled]}
-        >
-          <LinearGradient
-            colors={["#356BFF", "#1E48E5"]}
-            end={{ x: 1, y: 0.5 }}
-            start={{ x: 0, y: 0.5 }}
-            style={styles.button}
-          >
-            {isSubmitting ? (
-              <>
-                <ActivityIndicator color="#FFFFFF" size="small" />
-                <Text style={styles.buttonText}>Dang xu ly...</Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.buttonText}>Dang ky</Text>
-                <Ionicons color="#FFFFFF" name="chevron-forward" size={18} />
-              </>
-            )}
-          </LinearGradient>
-        </Pressable>
-
-        <View style={styles.loginRow}>
-          <Text style={styles.loginText}>Da co tai khoan? </Text>
-          <Link asChild href="/login">
-            <Pressable>
-              <Text style={styles.loginLink}>Dang nhap</Text>
-            </Pressable>
-          </Link>
-        </View>
-      </View>
-    </AuthScreenLayout>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F7F9FF",
+  },
+  safeArea: {
+    flex: 1,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: 18,
+    paddingTop: 20,
+    paddingBottom: 28,
+    alignItems: "center",
+  },
+  inner: {
+    width: "100%",
+    maxWidth: 520,
+    position: "relative",
+  },
+  glow: {
+    position: "absolute",
+    borderRadius: 999,
+    opacity: 0.9,
+  },
+  glowPrimary: {
+    top: -110,
+    right: -40,
+    width: 240,
+    height: 240,
+    backgroundColor: "#DCE8FF",
+  },
+  glowSecondary: {
+    top: 210,
+    left: -110,
+    width: 190,
+    height: 190,
+    backgroundColor: "#EDE9FE",
+  },
+  glowTertiary: {
+    bottom: 60,
+    right: -70,
+    width: 180,
+    height: 180,
+    backgroundColor: "#E0F2FE",
+  },
+  backButton: {
+    position: "absolute",
+    top: 8,
+    left: 0,
+    zIndex: 2,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFFE8",
+    borderWidth: 1,
+    borderColor: "#E5EAF3",
+    shadowColor: "#94A3B8",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 6,
+  },
+  header: {
+    alignItems: "center",
+    paddingTop: 8,
+    paddingBottom: 10,
+  },
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  brandBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2563EB",
+    shadowColor: "#2C4AF1",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  brandText: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#0F172A",
+    letterSpacing: -0.4,
+  },
+  brandAccent: {
+    color: "#2563EB",
+  },
+  title: {
+    marginTop: 18,
+    textAlign: "center",
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: "800",
+    color: "#0F172A",
+    letterSpacing: -0.6,
+  },
+  subtitle: {
+    marginTop: 10,
+    textAlign: "center",
+    fontSize: 16,
+    lineHeight: 24,
+    color: "#667085",
+  },
   card: {
     marginTop: 18,
     borderRadius: 28,
