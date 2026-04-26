@@ -10,10 +10,14 @@ import org.example.khoahoc.dto.response.CategoryResponse;
 import org.example.khoahoc.dto.response.CourseResponse;
 import org.example.khoahoc.entity.Category;
 import org.example.khoahoc.entity.Course;
+import org.example.khoahoc.entity.User;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
 import org.example.khoahoc.repository.CategoryRepository;
 import org.example.khoahoc.repository.CourseRepository;
+import org.example.khoahoc.repository.EnrollmentRepository;
+import org.example.khoahoc.repository.UserRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,6 +31,8 @@ public class CourseService {
 
     CourseRepository courseRepository;
     CategoryRepository categoryRepository;
+    EnrollmentRepository enrollmentRepository;
+    UserRepository userRepository;
 
     public CourseResponse createCourse(CourseCreationRequest request) {
         log.info("Creating new course with title: {}", request.getTitle());
@@ -55,6 +61,21 @@ public class CourseService {
 
     public List<CourseResponse> getAllCourses() {
         return courseRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<CourseResponse> getMyCourses() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        List<Long> courseIds = enrollmentRepository.findByUserId(currentUser.getUserId())
+                .stream()
+                .map(enrollment -> enrollment.getCourseId())
+                .collect(Collectors.toList());
+
+        return courseRepository.findAllById(courseIds).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

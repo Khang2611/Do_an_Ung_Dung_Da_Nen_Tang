@@ -42,6 +42,16 @@ public class CourseController {
                 .build());
     }
 
+    // Lấy danh sách khóa học mà user hiện tại đã đăng ký
+    @GetMapping("/myCourse")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
+    public ResponseEntity<ApiResponse<List<CourseResponse>>> getMyCourse() {
+        return ResponseEntity.ok(ApiResponse.<List<CourseResponse>>builder()
+                .message("Danh sách khóa học của bạn.")
+                .result(courseService.getMyCourses())
+                .build());
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<CourseResponse>> getCourse(@PathVariable Long id) {
