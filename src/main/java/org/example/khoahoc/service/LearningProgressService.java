@@ -10,6 +10,7 @@ import org.example.khoahoc.dto.response.LearningProgressResponse;
 import org.example.khoahoc.entity.LearningProgress;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
+import org.example.khoahoc.mapper.LearningProgressMapper;
 import org.example.khoahoc.repository.LearningProgressRepository;
 import org.springframework.stereotype.Service;
 
@@ -24,40 +25,36 @@ import java.util.stream.Collectors;
 public class LearningProgressService {
 
     LearningProgressRepository learningProgressRepository;
+    LearningProgressMapper learningProgressMapper;
 
     public LearningProgressResponse createLearningProgress(LearningProgressCreationRequest request) {
         log.info("Creating learning progress for enrollmentId: {}, lessonId: {}", request.getEnrollmentId(), request.getLessonId());
 
         if (learningProgressRepository.findByEnrollmentIdAndLessonId(request.getEnrollmentId(), request.getLessonId()).isPresent()) {
-            throw new RuntimeException("Learning progress for this lesson already exists");
+            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION); // Cần thêm mã lỗi LEARNING_PROGRESS_EXISTED
         }
 
-        LearningProgress progress = LearningProgress.builder()
-                .enrollmentId(request.getEnrollmentId())
-                .lessonId(request.getLessonId())
-                .isCompleted(request.getIsCompleted() != null && request.getIsCompleted())
-                .build();
+        LearningProgress progress = learningProgressMapper.toLearningProgress(request);
+        if (progress.getIsCompleted() == null) {
+            progress.setIsCompleted(false);
+        }
 
         progress = learningProgressRepository.save(progress);
-        return mapToResponse(progress);
+        return learningProgressMapper.toLearningProgressResponse(progress);
     }
 
     public LearningProgressResponse getLearningProgress(Long id) {
         LearningProgress progress = learningProgressRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.LEARNING_PROGRESS_NOT_FOUND));
-        return mapToResponse(progress);
+        return learningProgressMapper.toLearningProgressResponse(progress);
     }
 
     public List<LearningProgressResponse> getAllLearningProgresses() {
-        return learningProgressRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return learningProgressMapper.toLearningProgressResponseList(learningProgressRepository.findAll());
     }
 
     public List<LearningProgressResponse> getLearningProgressesByEnrollmentId(Long enrollmentId) {
-        return learningProgressRepository.findByEnrollmentId(enrollmentId).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return learningProgressMapper.toLearningProgressResponseList(learningProgressRepository.findByEnrollmentId(enrollmentId));
     }
 
     public LearningProgressResponse updateLearningProgress(Long id, LearningProgressUpdateRequest request) {
@@ -65,31 +62,22 @@ public class LearningProgressService {
                 .orElseThrow(() -> new AppException(ErrorCode.LEARNING_PROGRESS_NOT_FOUND));
 
         if (request.getIsCompleted() != null) {
-            progress.setIsCompleted(request.getIsCompleted());
-            if (Boolean.TRUE.equals(request.getIsCompleted()) && progress.getCompletedDate() == null) {
+            learningProgressMapper.updateLearningProgress(progress, request);
+            
+            if (Boolean.TRUE.equals(progress.getIsCompleted()) && progress.getCompletedDate() == null) {
                 progress.setCompletedDate(LocalDateTime.now());
-            } else if (Boolean.FALSE.equals(request.getIsCompleted())) {
+            } else if (Boolean.FALSE.equals(progress.getIsCompleted())) {
                  progress.setCompletedDate(null);
             }
         }
 
         progress = learningProgressRepository.save(progress);
-        return mapToResponse(progress);
+        return learningProgressMapper.toLearningProgressResponse(progress);
     }
 
     public void deleteLearningProgress(Long id) {
         LearningProgress progress = learningProgressRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.LEARNING_PROGRESS_NOT_FOUND));
         learningProgressRepository.delete(progress);
-    }
-
-    private LearningProgressResponse mapToResponse(LearningProgress progress) {
-        return LearningProgressResponse.builder()
-                .progressId(progress.getProgressId())
-                .enrollmentId(progress.getEnrollmentId())
-                .lessonId(progress.getLessonId())
-                .isCompleted(progress.getIsCompleted())
-                .completedDate(progress.getCompletedDate())
-                .build();
     }
 }

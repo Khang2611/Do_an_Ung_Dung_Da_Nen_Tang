@@ -10,6 +10,7 @@ import org.example.khoahoc.dto.response.PaymentTransactionResponse;
 import org.example.khoahoc.entity.PaymentTransaction;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
+import org.example.khoahoc.mapper.PaymentTransactionMapper;
 import org.example.khoahoc.repository.PaymentTransactionRepository;
 import org.springframework.stereotype.Service;
 
@@ -23,69 +24,44 @@ import java.util.stream.Collectors;
 public class PaymentTransactionService {
 
     PaymentTransactionRepository paymentTransactionRepository;
+    PaymentTransactionMapper paymentTransactionMapper;
 
     public PaymentTransactionResponse createTransaction(PaymentTransactionCreationRequest request) {
         log.info("Creating new payment transaction for orderId: {}", request.getOrderId());
 
-        PaymentTransaction transaction = PaymentTransaction.builder()
-                .userId(request.getUserId())
-                .orderId(request.getOrderId())
-                .amount(request.getAmount())
-                .paymentMethod(request.getPaymentMethod())
-                .transactionRef(request.getTransactionRef())
-                .ipAddress(request.getIpAddress())
-                .build();
+        PaymentTransaction transaction = paymentTransactionMapper.toPaymentTransaction(request);
 
         transaction = paymentTransactionRepository.save(transaction);
-        return mapToResponse(transaction);
+        return paymentTransactionMapper.toPaymentTransactionResponse(transaction);
     }
 
     public PaymentTransactionResponse getTransaction(Long id) {
         PaymentTransaction transaction = paymentTransactionRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_TRANSACTION_NOT_FOUND));
-        return mapToResponse(transaction);
+        return paymentTransactionMapper.toPaymentTransactionResponse(transaction);
     }
 
     public List<PaymentTransactionResponse> getAllTransactions() {
-        return paymentTransactionRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return paymentTransactionMapper.toPaymentTransactionResponseList(paymentTransactionRepository.findAll());
     }
 
     public List<PaymentTransactionResponse> getTransactionsByOrderId(Long orderId) {
-        return paymentTransactionRepository.findByOrderId(orderId).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return paymentTransactionMapper.toPaymentTransactionResponseList(paymentTransactionRepository.findByOrderId(orderId));
     }
 
     public PaymentTransactionResponse updateTransaction(Long id, PaymentTransactionUpdateRequest request) {
         PaymentTransaction transaction = paymentTransactionRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_TRANSACTION_NOT_FOUND));
 
-        if (request.getStatus() != null) transaction.setStatus(request.getStatus());
-        if (request.getTransactionRef() != null) transaction.setTransactionRef(request.getTransactionRef());
+        paymentTransactionMapper.updatePaymentTransaction(transaction, request);
 
         transaction = paymentTransactionRepository.save(transaction);
-        return mapToResponse(transaction);
+        return paymentTransactionMapper.toPaymentTransactionResponse(transaction);
     }
 
     public void deleteTransaction(Long id) {
         PaymentTransaction transaction = paymentTransactionRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_TRANSACTION_NOT_FOUND));
         paymentTransactionRepository.delete(transaction);
-    }
-
-    private PaymentTransactionResponse mapToResponse(PaymentTransaction transaction) {
-        return PaymentTransactionResponse.builder()
-                .transactionId(transaction.getTransactionId())
-                .userId(transaction.getUserId())
-                .orderId(transaction.getOrderId())
-                .amount(transaction.getAmount())
-                .paymentMethod(transaction.getPaymentMethod())
-                .transactionRef(transaction.getTransactionRef())
-                .status(transaction.getStatus())
-                .ipAddress(transaction.getIpAddress())
-                .createdDate(transaction.getCreatedDate())
-                .build();
     }
 }

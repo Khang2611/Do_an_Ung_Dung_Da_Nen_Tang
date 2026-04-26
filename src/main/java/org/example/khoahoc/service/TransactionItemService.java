@@ -10,6 +10,7 @@ import org.example.khoahoc.dto.response.TransactionItemResponse;
 import org.example.khoahoc.entity.TransactionItem;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
+import org.example.khoahoc.mapper.TransactionItemMapper;
 import org.example.khoahoc.repository.TransactionItemRepository;
 import org.springframework.stereotype.Service;
 
@@ -23,61 +24,44 @@ import java.util.stream.Collectors;
 public class TransactionItemService {
 
     TransactionItemRepository transactionItemRepository;
+    TransactionItemMapper transactionItemMapper;
 
     public TransactionItemResponse createTransactionItem(TransactionItemCreationRequest request) {
         log.info("Creating new transaction item for transactionId: {}, courseId: {}", request.getTransactionId(), request.getCourseId());
 
-        TransactionItem transactionItem = TransactionItem.builder()
-                .transactionId(request.getTransactionId())
-                .courseId(request.getCourseId())
-                .amount(request.getAmount())
-                .build();
+        TransactionItem transactionItem = transactionItemMapper.toTransactionItem(request);
 
         transactionItem = transactionItemRepository.save(transactionItem);
-        return mapToResponse(transactionItem);
+        return transactionItemMapper.toTransactionItemResponse(transactionItem);
     }
 
     public TransactionItemResponse getTransactionItem(Long id) {
         TransactionItem transactionItem = transactionItemRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_ITEM_NOT_FOUND));
-        return mapToResponse(transactionItem);
+        return transactionItemMapper.toTransactionItemResponse(transactionItem);
     }
 
     public List<TransactionItemResponse> getAllTransactionItems() {
-        return transactionItemRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return transactionItemMapper.toTransactionItemResponseList(transactionItemRepository.findAll());
     }
 
     public List<TransactionItemResponse> getTransactionItemsByTransactionId(Long transactionId) {
-        return transactionItemRepository.findByTransactionId(transactionId).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return transactionItemMapper.toTransactionItemResponseList(transactionItemRepository.findByTransactionId(transactionId));
     }
 
     public TransactionItemResponse updateTransactionItem(Long id, TransactionItemUpdateRequest request) {
         TransactionItem transactionItem = transactionItemRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_ITEM_NOT_FOUND));
 
-        if (request.getAmount() != null) transactionItem.setAmount(request.getAmount());
+        transactionItemMapper.updateTransactionItem(transactionItem, request);
 
         transactionItem = transactionItemRepository.save(transactionItem);
-        return mapToResponse(transactionItem);
+        return transactionItemMapper.toTransactionItemResponse(transactionItem);
     }
 
     public void deleteTransactionItem(Long id) {
         TransactionItem transactionItem = transactionItemRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.TRANSACTION_ITEM_NOT_FOUND));
         transactionItemRepository.delete(transactionItem);
-    }
-
-    private TransactionItemResponse mapToResponse(TransactionItem transactionItem) {
-        return TransactionItemResponse.builder()
-                .itemId(transactionItem.getItemId())
-                .transactionId(transactionItem.getTransactionId())
-                .courseId(transactionItem.getCourseId())
-                .amount(transactionItem.getAmount())
-                .createdDate(transactionItem.getCreatedDate())
-                .build();
     }
 }

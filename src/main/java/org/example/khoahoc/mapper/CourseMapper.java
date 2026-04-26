@@ -8,6 +8,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring", uses = {CategoryMapper.class})
 public interface CourseMapper {
 
@@ -21,6 +23,7 @@ public interface CourseMapper {
     // Course → CourseResponse
     // MapStruct dùng CategoryMapper để tự map course.category → CategoryResponse
     CourseResponse toCourseResponse(Course course);
+    List<CourseResponse> toCourseResponseList(List<Course> courses);
 
     // Cập nhật Course từ CourseUpdateRequest
     // courseId, category, createdDate không được thay đổi qua mapper

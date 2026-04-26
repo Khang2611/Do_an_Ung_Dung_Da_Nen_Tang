@@ -11,6 +11,7 @@ import org.example.khoahoc.entity.User;
 import org.example.khoahoc.enums.Role;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
+import org.example.khoahoc.mapper.UserMapper;
 import org.example.khoahoc.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class UserService {
 
     UserRepository userRepository;
     PasswordEncoder passwordEncoder;
+    UserMapper userMapper;
 
     public UserResponse createUser(UserCreationRequest request) {
         log.info("Creating new user with username: {}", request.getUsername());
@@ -49,28 +51,22 @@ public class UserService {
             }
         }
 
-        User user = User.builder()
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .email(request.getEmail())
-                .fullName(request.getFullName())
-                .role(userRole)
-                .build();
+        User user = userMapper.toUser(request);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(userRole);
 
         user = userRepository.save(user);
-        return mapToResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     public UserResponse getUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        return mapToResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return userMapper.toUserResponseList(userRepository.findAll());
     }
 
     public UserResponse updateUserProfile(Long id, String authenticatedUsername, UserUpdateRequest request) {
@@ -85,14 +81,14 @@ public class UserService {
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION); // Cần có mã lỗi UNAUTHORIZED thích hợp
         }
 
+        userMapper.updateUser(user, request);
+        
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
-        if (request.getEmail() != null) user.setEmail(request.getEmail());
-        if (request.getFullName() != null) user.setFullName(request.getFullName());
 
         user = userRepository.save(user);
-        return mapToResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     public UserResponse updateUserRole(Long id, String role) {
@@ -110,23 +106,12 @@ public class UserService {
         }
 
         user = userRepository.save(user);
-        return mapToResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         userRepository.delete(user);
-    }
-
-    private UserResponse mapToResponse(User user) {
-        return UserResponse.builder()
-                .userId(user.getUserId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .role(user.getRole() != null ? user.getRole().name() : null)
-                .createdDate(user.getCreatedDate())
-                .build();
     }
 }

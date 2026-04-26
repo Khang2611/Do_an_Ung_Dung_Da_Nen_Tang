@@ -8,6 +8,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface EnrollmentMapper {
 
@@ -21,6 +23,7 @@ public interface EnrollmentMapper {
 
     // Enrollment → EnrollmentResponse (tất cả fields map 1-1)
     EnrollmentResponse toEnrollmentResponse(Enrollment enrollment);
+    List<EnrollmentResponse> toEnrollmentResponseList(List<Enrollment> enrollments);
 
     // Cập nhật Enrollment (chỉ cho phép thay progress và status)
     @Mapping(target = "enrollmentId", ignore = true)
