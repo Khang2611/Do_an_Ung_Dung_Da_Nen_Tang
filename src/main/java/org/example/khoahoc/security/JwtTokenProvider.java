@@ -19,13 +19,11 @@ import java.util.Date;
 public class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
-
     // ─── Tạo SecretKey từ chuỗi Base64 trong config ──────────────────────────
     private SecretKey getSigningKey() {
         byte[] keyBytes = Base64.getDecoder().decode(jwtProperties.getSecret());
         return Keys.hmacShaKeyFor(keyBytes);
     }
-
     // ─── Sinh JWT token ───────────────────────────────────────────────────────
     /**
      * Tạo JWT token chứa username và role.

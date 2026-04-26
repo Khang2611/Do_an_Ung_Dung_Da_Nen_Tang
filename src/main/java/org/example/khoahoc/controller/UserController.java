@@ -41,8 +41,8 @@ public class UserController {
                 .build());
     }
 
-    // Người dùng cập nhật thông tin cá nhân của chính họ (dựa trên ID và Token khớp nhau)
-    @PutMapping("/{id}")
+    // Người dùng cập nhật thông tin cá nhân của chính họ 
+    @PutMapping("/me")
     @PreAuthorize("hasAnyRole('USER', 'TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserProfile(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();

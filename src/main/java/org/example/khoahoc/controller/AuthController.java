@@ -30,7 +30,7 @@ public class AuthController {
      */
     /**
      * POST /api/auth/register
-     * Đăng ký tài khoản mới. Không yêu cầu xác thực.
+     * Đăng ký tài khoản mới.
      */
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserResponse>> register(@RequestBody UserCreationRequest request) {
