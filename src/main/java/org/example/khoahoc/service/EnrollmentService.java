@@ -30,7 +30,7 @@ public class EnrollmentService {
         log.info("Creating new enrollment for userId: {}, courseId: {}", request.getUserId(), request.getCourseId());
 
         if (enrollmentRepository.findByUserIdAndCourseId(request.getUserId(), request.getCourseId()).isPresent()) {
-            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION); // Could add ENROLLMENT_EXISTED
+            throw new AppException(ErrorCode.ENROLLMENT_EXISTED);
         }
 
         Enrollment enrollment = enrollmentMapper.toEnrollment(request);

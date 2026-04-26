@@ -42,7 +42,7 @@ public class UserService {
                 Role requestedRole = Role.valueOf(request.getRole().toUpperCase());
                 // Không cho phép tự đăng ký quyền ADMIN qua API public
                 if (requestedRole == Role.ADMIN) {
-                    throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION); // Hoặc bạn có thể dùng mã lỗi custom "UNAUTHORIZED_ROLE"
+                    throw new AppException(ErrorCode.UNAUTHORIZED_ACTION);
                 }
                 userRole = requestedRole;
             } catch (IllegalArgumentException e) {
@@ -78,7 +78,7 @@ public class UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
                 
         if (!user.getUserId().equals(currentUser.getUserId()) && currentUser.getRole() != Role.ADMIN) {
-            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION); // Cần có mã lỗi UNAUTHORIZED thích hợp
+            throw new AppException(ErrorCode.UNAUTHORIZED_ACTION);
         }
 
         userMapper.updateUser(user, request);
@@ -101,7 +101,7 @@ public class UserService {
                 user.setRole(newRole);
             } catch (IllegalArgumentException e) {
                 log.warn("Invalid role provided: {}", role);
-                throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+                throw new AppException(ErrorCode.INVALID_ROLE);
             }
         }
 

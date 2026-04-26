@@ -31,7 +31,7 @@ public class LearningProgressService {
         log.info("Creating learning progress for enrollmentId: {}, lessonId: {}", request.getEnrollmentId(), request.getLessonId());
 
         if (learningProgressRepository.findByEnrollmentIdAndLessonId(request.getEnrollmentId(), request.getLessonId()).isPresent()) {
-            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION); // Cần thêm mã lỗi LEARNING_PROGRESS_EXISTED
+            throw new AppException(ErrorCode.LEARNING_PROGRESS_EXISTED);
         }
 
         LearningProgress progress = learningProgressMapper.toLearningProgress(request);
