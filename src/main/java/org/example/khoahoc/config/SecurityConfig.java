@@ -12,6 +12,11 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -24,27 +29,42 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Tắt CSRF vì dùng JWT (stateless)
             .csrf(AbstractHttpConfigurer::disable)
-
-            // Stateless — không tạo session
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
 
+            // ── THÊM MỚI: CORS cho phép Gateway :8090 gọi webhook ────────────
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // ─────────────────────────────────────────────────────────────────
+
             .authorizeHttpRequests(auth -> auth
-                // Public: đăng ký tài khoản và đăng nhập
                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                // Public Webhook: Nhận callback từ 3rd party payment, xác thực bằng API/Secret key
+                // Webhook từ Gateway — xác thực bằng API/Secret key (không cần JWT)
                 .requestMatchers(HttpMethod.POST, "/api/webhook/payment").permitAll()
-                // Tất cả endpoint còn lại yêu cầu xác thực JWT
                 .anyRequest().authenticated()
             )
-
-            // Đăng ký JWT filter trước filter mặc định của Spring Security
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
+    // ── THÊM MỚI ─────────────────────────────────────────────────────────────
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of(
+                "http://localhost:8090",   // Payment Gateway
+                "http://localhost:8080"    // Self
+        ));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(false);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 }
