@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "EngPro",
+    "slug": "engpro-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/branding/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/branding/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "vn.engpro.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/branding/android-icon-foreground.png",
+        "monochromeImage": "./assets/branding/android-icon-monochrome.png",
+        "backgroundColor": "#2f49e7"
+      },
+      "package": "vn.engpro.app"
+    },
+    "web": {
+      "favicon": "./assets/branding/favicon.png"
+    }
+  }
+}
