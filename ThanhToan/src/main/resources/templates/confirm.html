@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đang xử lý - EduPay Gateway</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="page-wrapper">
+
+    <header class="gw-header">
+        <div class="header-inner">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">EduPay Gateway</span>
+            </div>
+            <div class="secure-badge">
+                <span class="lock-icon">🔒</span> Kết nối bảo mật SSL
+            </div>
+        </div>
+    </header>
+
+    <div class="progress-bar-wrap">
+        <div class="progress-step done">
+            <div class="step-dot">✓</div>
+            <div class="step-label">Chọn phương thức</div>
+        </div>
+        <div class="progress-line filled"></div>
+        <div class="progress-step active">
+            <div class="step-dot">2</div>
+            <div class="step-label">Xác nhận</div>
+        </div>
+        <div class="progress-line"></div>
+        <div class="progress-step">
+            <div class="step-dot">3</div>
+            <div class="step-label">Kết quả</div>
+        </div>
+    </div>
+
+    <main class="main-content">
+        <div class="card">
+            <div class="order-summary">
+                <h2 class="section-title">✅ Xác nhận thanh toán</h2>
+                <div class="summary-row">
+                    <span class="label">Phương thức</span>
+                    <span class="value badge-method" th:text="${order.paymentMethod}">VNPAY</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">Mã đơn Gateway</span>
+                    <span class="value mono" th:text="${order.gwOrderId}">#1</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">Khóa học</span>
+                    <span class="value" th:text="${order.courseNames != null && !order.courseNames.isEmpty() ? order.courseNames : 'Không rõ'}">Khóa học A</span>
+                </div>
+                <div class="divider"></div>
+                <div class="summary-row total">
+                    <span class="label">Tổng thanh toán</span>
+                    <span class="value amount" th:text="${#numbers.formatDecimal(order.amount, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">500,000 VNĐ</span>
+                </div>
+            </div>
+
+            <!-- Processing UI -->
+            <div id="processing-box" class="processing-box" style="display:none;">
+                <div class="spinner"></div>
+                <p class="processing-text">Đang kết nối tới <span th:text="${order.paymentMethod}">Gateway</span>...</p>
+                <p class="processing-sub">Vui lòng không đóng trình duyệt</p>
+                <div class="progress-fill-bar">
+                    <div class="progress-fill-inner" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <!-- Confirm Buttons (hidden after start) -->
+            <div id="confirm-buttons" class="action-row" style="flex-direction:column; gap:12px;">
+                <button id="btn-pay" class="btn btn-primary btn-lg" onclick="startPayment(true)">
+                    🔐 Xác nhận thanh toán
+                </button>
+
+                <!-- Nút test FAILED (dev/demo) -->
+                <button id="btn-fail" class="btn btn-outline-danger" onclick="startPayment(false)">
+                    ⚠️ Giả lập thất bại (Test)
+                </button>
+            </div>
+
+            <div style="text-align:center; margin-top:10px;">
+                <a th:href="@{/pay(transactionId=${order.khoahocTransactionId}, userId=${order.userId}, amount=${order.amount}, courseNames=${order.courseNames}, returnUrl=${returnUrl})}"
+                   class="btn btn-ghost">← Quay lại</a>
+            </div>
+        </div>
+        <p class="footer-note">🔐 Giao dịch được mã hóa 256-bit.</p>
+    </main>
+</div>
+
+<!-- Hidden data for JS -->
+<span id="gwOrderId" th:data-id="${order.gwOrderId}" style="display:none"></span>
+<span id="returnUrl" th:data-url="${returnUrl}" style="display:none"></span>
+<span id="simDelay" th:data-delay="${simulationDelay}" style="display:none"></span>
+
+<script th:src="@{/js/confirm.js}"></script>
+</body>
+</html>
