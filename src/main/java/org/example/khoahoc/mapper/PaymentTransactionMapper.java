@@ -18,7 +18,9 @@ public interface PaymentTransactionMapper {
     @Mapping(target = "createdDate", ignore = true)
     PaymentTransaction toPaymentTransaction(PaymentTransactionCreationRequest request);
 
-    PaymentTransactionResponse toPaymentTransactionResponse(PaymentTransaction paymentTransaction);
+    @Mapping(target = "gatewayUrl", ignore = true)
+PaymentTransactionResponse toPaymentTransactionResponse(PaymentTransaction paymentTransaction);
+// gatewayUrl không có trong entity, service tự set sau khi map
     List<PaymentTransactionResponse> toPaymentTransactionResponseList(List<PaymentTransaction> paymentTransactions);
 
     @Mapping(target = "transactionId", ignore = true)
