@@ -36,3 +36,7 @@ build/
 src/main/resources/application.properties
 # Bỏ comment dòng dưới nếu muốn block TẤT CẢ mọi file trong thư mục resources
 # src/main/resources/
+
+# Scratch files
+scratch/
+
