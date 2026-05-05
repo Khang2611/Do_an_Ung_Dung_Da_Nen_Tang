@@ -96,7 +96,7 @@ public class PaymentTransactionService {
         try {
             BigDecimal amount = BigDecimal.valueOf(coursePrice).setScale(2, RoundingMode.HALF_UP);
 
-            // Build payload theo đúng thứ tự mà Gateway verify (khớp với GatewayPaymentController.buildPayload)
+            // Build payload theo đúng thứ tự mà Gateway verify
             String payload = transactionRef + "|" +
                     transaction.getOrderId() + "|" +
                     transaction.getUserId() + "|" +
@@ -118,7 +118,7 @@ public class PaymentTransactionService {
                     .nonce(nonce)
                     .build();
 
-            // Gọi Gateway với 2 header bảo mật (X-Api-Key là định danh Merchant, X-Signature là chữ ký)
+            // Gọi Gateway với 2 header bảo mật
             Map<?, ?> gatewayResponse = RestClient.create()
                     .post()
                     .uri(paymentGatewayUrl + "/gateway/payments/initiate")

@@ -7,6 +7,10 @@ import org.example.khoahoc.dto.request.RoleUpdateRequest;
 import org.example.khoahoc.dto.request.UserUpdateRequest;
 import org.example.khoahoc.dto.response.ApiResponse;
 import org.example.khoahoc.dto.response.UserResponse;
+import org.example.khoahoc.entity.User;
+import org.example.khoahoc.exception.AppException;
+import org.example.khoahoc.exception.ErrorCode;
+import org.example.khoahoc.repository.UserRepository;
 import org.example.khoahoc.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +26,7 @@ import java.util.List;
 public class UserController {
 
     UserService userService;
+    UserRepository userRepository;
 
 
     @GetMapping
@@ -48,12 +53,14 @@ public class UserController {
     // Người dùng cập nhật thông tin cá nhân của chính họ 
     @PutMapping("/me")
     @PreAuthorize("hasAnyRole('USER', 'TEACHER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponse>> updateUserProfile(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserProfile(@RequestBody UserUpdateRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         ApiResponse<UserResponse> response = new ApiResponse<>();
         response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
         response.setMessage("Cập nhật thông tin cá nhân thành công.");
-        response.setResult(userService.updateUserProfile(id, username, request));
+        response.setResult(userService.updateUserProfile(currentUser.getUserId(), username, request));
         return ResponseEntity.ok(response);
     }
 
