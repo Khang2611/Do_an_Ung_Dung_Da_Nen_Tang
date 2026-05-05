@@ -112,7 +112,12 @@ public class PaymentPortalController {
         log.info("Người dùng hủy thanh toán: gwOrderId={}", gwOrderId);
         paymentGatewayService.cancelOrder(gwOrderId);
         String redirect = returnUrl != null ? returnUrl : "http://localhost:8080";
-        return "redirect:/pay/result?gwOrderId=" + gwOrderId + "&returnUrl=" + redirect;
+        try {
+            String encodedUrl = java.net.URLEncoder.encode(redirect, java.nio.charset.StandardCharsets.UTF_8);
+            return "redirect:/pay/result?gwOrderId=" + gwOrderId + "&returnUrl=" + encodedUrl;
+        } catch (Exception e) {
+            return "redirect:/pay/result?gwOrderId=" + gwOrderId;
+        }
     }
 
     /**

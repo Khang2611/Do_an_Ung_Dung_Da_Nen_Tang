@@ -124,7 +124,7 @@ public class PaymentGatewayService {
                 .build();
 
         try {
-            String response = khoahocWebClient.post()
+            khoahocWebClient.post()
                     .uri(khoahocWebhookUrl)
                     .header("X-Api-Key", apiKey)
                     .header("X-Secret-Key", secretKey)
@@ -132,14 +132,15 @@ public class PaymentGatewayService {
                     .bodyValue(payload)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block();
-
-            log.info("Webhook gửi về KhoaHoc thành công. TransactionId={}, Status={}, Response={}",
-                    order.getKhoahocTransactionId(), status, response);
-
+                    .subscribe(
+                            response -> log.info("Webhook gửi về KhoaHoc thành công. TransactionId={}, Status={}, Response={}",
+                                    order.getKhoahocTransactionId(), status, response),
+                            error -> log.error("LỖI gọi webhook về KhoaHoc. TransactionId={}, Error={}",
+                                    order.getKhoahocTransactionId(), error.getMessage())
+                    );
         } catch (Exception e) {
             // Không throw — gateway đã xử lý xong phần mình, lỗi webhook chỉ log lại
-            log.error("LỖI gọi webhook về KhoaHoc. TransactionId={}, Error={}",
+            log.error("LỖI khi setup webhook về KhoaHoc. TransactionId={}, Error={}",
                     order.getKhoahocTransactionId(), e.getMessage());
         }
     }
