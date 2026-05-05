@@ -26,28 +26,32 @@ public class CategoryController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(@RequestBody CategoryCreationRequest request) {
-        return ResponseEntity.ok(ApiResponse.<CategoryResponse>builder()
-                .code(200)
-                .message("Tạo danh mục thành công.")
-                .result(categoryService.createCategory(request))
-                .build());
+        ApiResponse<CategoryResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Tạo danh mục thành công.");
+        response.setResult(categoryService.createCategory(request));
+        return ResponseEntity.ok(response);
     }
 
     // Tất cả người dùng đã đăng nhập đều xem được danh mục
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllCategories() {
-        return ResponseEntity.ok(ApiResponse.<List<CategoryResponse>>builder()
-                .result(categoryService.getAllCategories())
-                .build());
+        ApiResponse<List<CategoryResponse>> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(categoryService.getAllCategories());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<CategoryResponse>> getCategory(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.<CategoryResponse>builder()
-                .result(categoryService.getCategory(id))
-                .build());
+        ApiResponse<CategoryResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(categoryService.getCategory(id));
+        return ResponseEntity.ok(response);
     }
 
     // ADMIN , TEACHER mới được cập nhật/xóa danh mục
@@ -55,17 +59,20 @@ public class CategoryController {
     @PreAuthorize("hasAnyRole('ADMIN' ,'TEACHER')")
     public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(@PathVariable Long id,
             @RequestBody CategoryUpdateRequest request) {
-        return ResponseEntity.ok(ApiResponse.<CategoryResponse>builder()
-                .result(categoryService.updateCategory(id, request))
-                .build());
+        ApiResponse<CategoryResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(categoryService.updateCategory(id, request));
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .message("Xóa danh mục thành công.")
-                .build());
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Xóa danh mục thành công.");
+        return ResponseEntity.ok(response);
     }
 }

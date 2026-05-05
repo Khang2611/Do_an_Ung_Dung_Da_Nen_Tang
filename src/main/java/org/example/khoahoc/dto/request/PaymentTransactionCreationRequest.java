@@ -11,8 +11,7 @@ import lombok.experimental.FieldDefaults;
 public class PaymentTransactionCreationRequest {
     Long userId;
     Long orderId;
-    Double amount;
+    Long courseId;      // Tự động lấy giá từ Course.price
     String paymentMethod;
-    String transactionRef;
     String ipAddress;
 }

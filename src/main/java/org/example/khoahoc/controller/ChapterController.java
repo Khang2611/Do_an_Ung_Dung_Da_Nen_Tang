@@ -26,53 +26,62 @@ public class ChapterController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ChapterResponse>> createChapter(@RequestBody ChapterCreationRequest request) {
-        return ResponseEntity.ok(ApiResponse.<ChapterResponse>builder()
-                .code(200)
-                .message("Tạo chương học thành công.")
-                .result(chapterService.createChapter(request))
-                .build());
+        ApiResponse<ChapterResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Tạo chương học thành công.");
+        response.setResult(chapterService.createChapter(request));
+        return ResponseEntity.ok(response);
     }
 
     // Tất cả người dùng đã đăng nhập đều xem được
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<List<ChapterResponse>>> getAllChapters() {
-        return ResponseEntity.ok(ApiResponse.<List<ChapterResponse>>builder()
-                .result(chapterService.getAllChapters())
-                .build());
+        ApiResponse<List<ChapterResponse>> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(chapterService.getAllChapters());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/course/{courseId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<List<ChapterResponse>>> getChaptersByCourseId(@PathVariable Long courseId) {
-        return ResponseEntity.ok(ApiResponse.<List<ChapterResponse>>builder()
-                .result(chapterService.getChaptersByCourseId(courseId))
-                .build());
+        ApiResponse<List<ChapterResponse>> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(chapterService.getChaptersByCourseId(courseId));
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<ChapterResponse>> getChapter(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.<ChapterResponse>builder()
-                .result(chapterService.getChapter(id))
-                .build());
+        ApiResponse<ChapterResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(chapterService.getChapter(id));
+        return ResponseEntity.ok(response);
     }
 
     // ADMIN và TEACHER mới được sửa/xóa chương
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ChapterResponse>> updateChapter(@PathVariable Long id, @RequestBody ChapterUpdateRequest request) {
-        return ResponseEntity.ok(ApiResponse.<ChapterResponse>builder()
-                .result(chapterService.updateChapter(id, request))
-                .build());
+        ApiResponse<ChapterResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(chapterService.updateChapter(id, request));
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteChapter(@PathVariable Long id) {
         chapterService.deleteChapter(id);
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .message("Xóa chương học thành công.")
-                .build());
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Xóa chương học thành công.");
+        return ResponseEntity.ok(response);
     }
 }

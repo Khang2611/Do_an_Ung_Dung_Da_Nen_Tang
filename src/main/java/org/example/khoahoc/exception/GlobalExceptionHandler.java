@@ -11,19 +11,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiResponse<Void>> handleAppException(AppException e) {
         ErrorCode errorCode = e.getErrorCode();
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-                .code(errorCode.getCode())
-                .message(errorCode.getMessage())
-                .build();
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(errorCode.getCode());
+        response.setMessage(errorCode.getMessage());
         return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception e) {
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-                .code(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode())
-                .message(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage())
-                .build();
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
+        response.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
         return ResponseEntity.internalServerError().body(response);
     }
 }

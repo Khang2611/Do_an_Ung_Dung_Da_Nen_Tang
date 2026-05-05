@@ -34,11 +34,11 @@ public class AuthController {
      */
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserResponse>> register(@RequestBody UserCreationRequest request) {
-        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
-                .code(200)
-                .message("Đăng ký tài khoản thành công.")
-                .result(userService.createUser(request))
-                .build());
+        ApiResponse<UserResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Đăng ký tài khoản thành công.");
+        response.setResult(userService.createUser(request));
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -47,10 +47,10 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(ApiResponse.<LoginResponse>builder()
-                .code(200)
-                .message("Đăng nhập thành công.")
-                .result(authService.login(request))
-                .build());
+        ApiResponse<LoginResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Đăng nhập thành công.");
+        response.setResult(authService.login(request));
+        return ResponseEntity.ok(response);
     }
 }

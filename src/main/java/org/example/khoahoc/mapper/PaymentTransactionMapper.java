@@ -14,11 +14,16 @@ import java.util.List;
 public interface PaymentTransactionMapper {
 
     @Mapping(target = "transactionId", ignore = true)
+    @Mapping(target = "transactionRef", ignore = true) // set thủ công trong service (UUID)
+    @Mapping(target = "amount", ignore = true) // set từ Course.price trong service
+
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
     PaymentTransaction toPaymentTransaction(PaymentTransactionCreationRequest request);
 
+    @Mapping(target = "gatewayUrl", ignore = true)
     PaymentTransactionResponse toPaymentTransactionResponse(PaymentTransaction paymentTransaction);
+
     List<PaymentTransactionResponse> toPaymentTransactionResponseList(List<PaymentTransaction> paymentTransactions);
 
     @Mapping(target = "transactionId", ignore = true)
@@ -28,5 +33,6 @@ public interface PaymentTransactionMapper {
     @Mapping(target = "paymentMethod", ignore = true)
     @Mapping(target = "ipAddress", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
-    void updatePaymentTransaction(@MappingTarget PaymentTransaction paymentTransaction, PaymentTransactionUpdateRequest request);
+    void updatePaymentTransaction(@MappingTarget PaymentTransaction paymentTransaction,
+            PaymentTransactionUpdateRequest request);
 }

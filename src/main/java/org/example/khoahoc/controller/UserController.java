@@ -27,18 +27,22 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
-        return ResponseEntity.ok(ApiResponse.<List<UserResponse>>builder()
-                .result(userService.getAllUsers())
-                .build());
+        ApiResponse<List<UserResponse>> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(userService.getAllUsers());
+        return ResponseEntity.ok(response);
     }
 
     // ADMIN và chính user đó mới được xem
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
-                .result(userService.getUser(id))
-                .build());
+        ApiResponse<UserResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(userService.getUser(id));
+        return ResponseEntity.ok(response);
     }
 
     // Người dùng cập nhật thông tin cá nhân của chính họ 
@@ -46,20 +50,22 @@ public class UserController {
     @PreAuthorize("hasAnyRole('USER', 'TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserProfile(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
-                .result(userService.updateUserProfile(id, username, request))
-                .message("Cập nhật thông tin cá nhân thành công.")
-                .build());
+        ApiResponse<UserResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Cập nhật thông tin cá nhân thành công.");
+        response.setResult(userService.updateUserProfile(id, username, request));
+        return ResponseEntity.ok(response);
     }
 
     // Chỉ ADMIN mới được cập nhật quyền người dùng
     @PatchMapping("/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserRole(@PathVariable Long id, @RequestBody RoleUpdateRequest request) {
-        return ResponseEntity.ok(ApiResponse.<UserResponse>builder()
-                .result(userService.updateUserRole(id, request.getRole()))
-                .message("Cập nhật quyền thành công.")
-                .build());
+        ApiResponse<UserResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Cập nhật quyền thành công.");
+        response.setResult(userService.updateUserRole(id, request.getRole()));
+        return ResponseEntity.ok(response);
     }
 
     // Chỉ ADMIN mới được xóa user
@@ -67,8 +73,9 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .message("Xóa người dùng thành công.")
-                .build());
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Xóa người dùng thành công.");
+        return ResponseEntity.ok(response);
     }
 }

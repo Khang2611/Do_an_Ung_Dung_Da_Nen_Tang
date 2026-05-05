@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum ErrorCode {
 
+    SUCCESS(200, "Thành công", HttpStatus.OK),
+
     // ── 5xxx → 500 Internal Server Error ───────────────────────────────
     UNCATEGORIZED_EXCEPTION(5000, "Lỗi không xác định", HttpStatus.INTERNAL_SERVER_ERROR),
 
