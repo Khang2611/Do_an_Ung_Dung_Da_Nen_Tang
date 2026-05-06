@@ -13,7 +13,6 @@ export default function ProfileScreen() {
     { icon: '🏆', label: 'Chứng chỉ', onPress: () => {} },
     { icon: '🔔', label: 'Thông báo', onPress: () => {} },
     { icon: '🔒', label: 'Đổi mật khẩu', onPress: () => {} },
-    { icon: '🧪', label: 'Form Thực Hành (React Hooks)', onPress: () => router.push('/practice-form') },
     { icon: '❓', label: 'Trợ giúp & Hỗ trợ', onPress: () => {} },
   ];
 
