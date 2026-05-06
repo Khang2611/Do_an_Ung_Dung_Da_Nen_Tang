@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "EngApp",
+    "slug": "eng-app",
+    "version": "1.0.0",
+    "scheme": "engapp",
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ]
+  }
+}
