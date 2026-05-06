@@ -6,7 +6,6 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.example.khoahoc.dto.request.CourseCreationRequest;
 import org.example.khoahoc.dto.request.CourseUpdateRequest;
-import org.example.khoahoc.dto.response.CategoryResponse;
 import org.example.khoahoc.dto.response.CourseResponse;
 import org.example.khoahoc.entity.Category;
 import org.example.khoahoc.entity.Course;

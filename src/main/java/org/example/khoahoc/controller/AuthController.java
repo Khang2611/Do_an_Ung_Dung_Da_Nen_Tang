@@ -10,6 +10,7 @@ import org.example.khoahoc.dto.response.LoginResponse;
 import org.example.khoahoc.dto.response.UserResponse;
 import org.example.khoahoc.service.AuthService;
 import org.example.khoahoc.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +34,7 @@ public class AuthController {
      * Đăng ký tài khoản mới.
      */
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<UserResponse>> register(@RequestBody UserCreationRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> register(@RequestBody @Valid UserCreationRequest request) {
         ApiResponse<UserResponse> response = new ApiResponse<>();
         response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
         response.setMessage("Đăng ký tài khoản thành công.");

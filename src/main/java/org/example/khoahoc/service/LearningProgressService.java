@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,9 +27,11 @@ public class LearningProgressService {
     LearningProgressMapper learningProgressMapper;
 
     public LearningProgressResponse createLearningProgress(LearningProgressCreationRequest request) {
-        log.info("Creating learning progress for enrollmentId: {}, lessonId: {}", request.getEnrollmentId(), request.getLessonId());
+        log.info("Creating learning progress for enrollmentId: {}, lessonId: {}", request.getEnrollmentId(),
+                request.getLessonId());
 
-        if (learningProgressRepository.findByEnrollmentIdAndLessonId(request.getEnrollmentId(), request.getLessonId()).isPresent()) {
+        if (learningProgressRepository.findByEnrollmentIdAndLessonId(request.getEnrollmentId(), request.getLessonId())
+                .isPresent()) {
             throw new AppException(ErrorCode.LEARNING_PROGRESS_EXISTED);
         }
 
@@ -54,7 +55,8 @@ public class LearningProgressService {
     }
 
     public List<LearningProgressResponse> getLearningProgressesByEnrollmentId(Long enrollmentId) {
-        return learningProgressMapper.toLearningProgressResponseList(learningProgressRepository.findByEnrollmentId(enrollmentId));
+        return learningProgressMapper
+                .toLearningProgressResponseList(learningProgressRepository.findByEnrollmentId(enrollmentId));
     }
 
     public LearningProgressResponse updateLearningProgress(Long id, LearningProgressUpdateRequest request) {
@@ -63,11 +65,11 @@ public class LearningProgressService {
 
         if (request.getIsCompleted() != null) {
             learningProgressMapper.updateLearningProgress(progress, request);
-            
+
             if (Boolean.TRUE.equals(progress.getIsCompleted()) && progress.getCompletedDate() == null) {
                 progress.setCompletedDate(LocalDateTime.now());
             } else if (Boolean.FALSE.equals(progress.getIsCompleted())) {
-                 progress.setCompletedDate(null);
+                progress.setCompletedDate(null);
             }
         }
 
