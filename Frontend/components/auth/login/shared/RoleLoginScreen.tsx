@@ -1,9 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
+import { useAuth } from "../../../../contexts/AuthContext";
 import AuthScreenLayout from "../../shared/AuthScreenLayout";
 import { LOGIN_ROLES } from "./roles";
 import type { LoginRoleKey, RoleScreenProps } from "./types";
@@ -21,12 +30,56 @@ export default function RoleLoginScreen({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { signIn } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     setEmail("");
     setPassword("");
     setShowPassword(false);
   }, [roleKey]);
+
+  /**
+   * Xử lý đăng nhập — gửi credentials lên backend, nhận JWT token.
+   * Token sẽ được AuthContext lưu vào SecureStore/AsyncStorage.
+   */
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập email và mật khẩu.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const user = await signIn({
+        username: email.trim(),
+        password: password.trim(),
+      });
+
+      Alert.alert(
+        "Đăng nhập thành công",
+        `Chào mừng ${user.username}!\nVai trò: ${user.role}`,
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Điều hướng dựa trên role từ JWT token
+              // TODO: Thêm các route cho dashboard khi có
+              // router.replace("/dashboard");
+            },
+          },
+        ]
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Đăng nhập thất bại.";
+      Alert.alert("Lỗi đăng nhập", message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <AuthScreenLayout
@@ -69,6 +122,7 @@ export default function RoleLoginScreen({
             <TextInput
               autoCapitalize="none"
               autoComplete="email"
+              editable={!isLoading}
               keyboardType="email-address"
               onChangeText={setEmail}
               placeholder="your@email.com"
@@ -96,6 +150,7 @@ export default function RoleLoginScreen({
             />
             <TextInput
               autoCapitalize="none"
+              editable={!isLoading}
               onChangeText={setPassword}
               placeholder="Nhap mat khau"
               placeholderTextColor="#9AA4B2"
@@ -117,15 +172,28 @@ export default function RoleLoginScreen({
           </View>
         </View>
 
-        <Pressable style={styles.buttonWrapper}>
+        <Pressable
+          disabled={isLoading}
+          onPress={handleLogin}
+          style={[styles.buttonWrapper, isLoading && styles.buttonDisabled]}
+        >
           <LinearGradient
             colors={role.buttonGradient}
             end={{ x: 1, y: 0.5 }}
             start={{ x: 0, y: 0.5 }}
             style={styles.button}
           >
-            <Text style={styles.buttonText}>Dang nhap</Text>
-            <Ionicons color="#FFFFFF" name="chevron-forward" size={18} />
+            {isLoading ? (
+              <>
+                <ActivityIndicator color="#FFFFFF" size="small" />
+                <Text style={styles.buttonText}>Dang xac thuc...</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.buttonText}>Dang nhap</Text>
+                <Ionicons color="#FFFFFF" name="chevron-forward" size={18} />
+              </>
+            )}
           </LinearGradient>
         </Pressable>
 
@@ -146,11 +214,12 @@ export default function RoleLoginScreen({
               size={16}
               style={styles.noticeIcon}
             />
-            <Text style={styles.noticeTitle}>Kiem tra vai tro tai khoan</Text>
+            <Text style={styles.noticeTitle}>Bao mat video MinIO</Text>
           </View>
           <Text style={styles.noticeText}>
-            Sau khi dang nhap, he thong se tu dong nhan biet vai tro tai khoan de
-            dieu huong den giao dien phu hop.
+            Sau khi dang nhap, JWT token se duoc luu an toan va tu dong gui kem
+            khi truy cap video bai hoc. Video duoc bao ve bang Signed URL co
+            thoi han tu MinIO.
           </Text>
         </View>
       </View>
@@ -261,6 +330,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.22,
     shadowRadius: 18,
     elevation: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   button: {
     height: 56,
