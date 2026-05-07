@@ -1,4 +1,4 @@
-package org.example.khoahoc.service;
+﻿package org.example.khoahoc.service;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +11,7 @@ import org.example.khoahoc.entity.User;
 import org.example.khoahoc.enums.Role;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
+import org.example.khoahoc.mapper.UserMapper;
 import org.example.khoahoc.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class UserService {
 
     UserRepository userRepository;
     PasswordEncoder passwordEncoder;
+    UserMapper userMapper;
 
     public UserResponse createUser(UserCreationRequest request) {
         log.info("Creating new user with username: {}", request.getUsername());
@@ -38,61 +40,55 @@ public class UserService {
         if (request.getRole() != null && !request.getRole().isEmpty()) {
             try {
                 Role requestedRole = Role.valueOf(request.getRole().toUpperCase());
-                // Không cho phép tự đăng ký quyền ADMIN qua API public
+                // KhÃ´ng cho phÃ©p tá»± Ä‘Äƒng kÃ½ quyá»n ADMIN qua API public
                 if (requestedRole == Role.ADMIN) {
-                    throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION); // Hoặc bạn có thể dùng mã lỗi custom "UNAUTHORIZED_ROLE"
+                    throw new AppException(ErrorCode.UNAUTHORIZED_ACTION);
                 }
                 userRole = requestedRole;
             } catch (IllegalArgumentException e) {
-                // Nếu truyền string tào lao thì mặc định vẫn là USER
+                // Náº¿u truyá»n string tÃ o lao thÃ¬ máº·c Ä‘á»‹nh váº«n lÃ  USER
                 userRole = Role.USER;
             }
         }
 
-        User user = User.builder()
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .email(request.getEmail())
-                .fullName(request.getFullName())
-                .role(userRole)
-                .build();
+        User user = userMapper.toUser(request);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(userRole);
 
         user = userRepository.save(user);
-        return mapToResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     public UserResponse getUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        return mapToResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return userMapper.toUserResponseList(userRepository.findAll());
     }
 
     public UserResponse updateUserProfile(Long id, String authenticatedUsername, UserUpdateRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        // Kiểm tra quyền sở hữu (chỉ cho phép cập nhật chính mình hoặc là ADMIN)
+        // Kiá»ƒm tra quyá»n sá»Ÿ há»¯u (chá»‰ cho phÃ©p cáº­p nháº­t chÃ­nh mÃ¬nh hoáº·c lÃ  ADMIN)
         User currentUser = userRepository.findByUsername(authenticatedUsername)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-                
+
         if (!user.getUserId().equals(currentUser.getUserId()) && currentUser.getRole() != Role.ADMIN) {
-            throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION); // Cần có mã lỗi UNAUTHORIZED thích hợp
+            throw new AppException(ErrorCode.UNAUTHORIZED_ACTION);
         }
+
+        userMapper.updateUser(user, request);
 
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
-        if (request.getEmail() != null) user.setEmail(request.getEmail());
-        if (request.getFullName() != null) user.setFullName(request.getFullName());
 
         user = userRepository.save(user);
-        return mapToResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     public UserResponse updateUserRole(Long id, String role) {
@@ -105,28 +101,17 @@ public class UserService {
                 user.setRole(newRole);
             } catch (IllegalArgumentException e) {
                 log.warn("Invalid role provided: {}", role);
-                throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+                throw new AppException(ErrorCode.INVALID_ROLE);
             }
         }
 
         user = userRepository.save(user);
-        return mapToResponse(user);
+        return userMapper.toUserResponse(user);
     }
 
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         userRepository.delete(user);
-    }
-
-    private UserResponse mapToResponse(User user) {
-        return UserResponse.builder()
-                .userId(user.getUserId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .role(user.getRole() != null ? user.getRole().name() : null)
-                .createdDate(user.getCreatedDate())
-                .build();
     }
 }

@@ -10,6 +10,7 @@ import org.example.khoahoc.dto.response.LessonResponse;
 import org.example.khoahoc.entity.Lesson;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
+import org.example.khoahoc.mapper.LessonMapper;
 import org.example.khoahoc.repository.LessonRepository;
 import org.springframework.stereotype.Service;
 
@@ -23,71 +24,44 @@ import java.util.stream.Collectors;
 public class LessonService {
 
     LessonRepository lessonRepository;
+    LessonMapper lessonMapper;
 
     public LessonResponse createLesson(LessonCreationRequest request) {
         log.info("Creating new lesson with title: {}", request.getTitle());
 
-        Lesson lesson = Lesson.builder()
-                .chapterId(request.getChapterId())
-                .title(request.getTitle())
-                .content(request.getContent())
-                .videoUrl(request.getVideoUrl())
-                .duration(request.getDuration())
-                .orderIndex(request.getOrderIndex())
-                .build();
+        Lesson lesson = lessonMapper.toLesson(request);
 
         lesson = lessonRepository.save(lesson);
-        return mapToResponse(lesson);
+        return lessonMapper.toLessonResponse(lesson);
     }
 
     public LessonResponse getLesson(Long id) {
         Lesson lesson = lessonRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
-        return mapToResponse(lesson);
+        return lessonMapper.toLessonResponse(lesson);
     }
 
     public List<LessonResponse> getAllLessons() {
-        return lessonRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return lessonMapper.toLessonResponseList(lessonRepository.findAll());
     }
 
     public List<LessonResponse> getLessonsByChapterId(Long chapterId) {
-        return lessonRepository.findByChapterId(chapterId).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return lessonMapper.toLessonResponseList(lessonRepository.findByChapterId(chapterId));
     }
 
     public LessonResponse updateLesson(Long id, LessonUpdateRequest request) {
         Lesson lesson = lessonRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
 
-        if (request.getTitle() != null) lesson.setTitle(request.getTitle());
-        if (request.getContent() != null) lesson.setContent(request.getContent());
-        if (request.getVideoUrl() != null) lesson.setVideoUrl(request.getVideoUrl());
-        if (request.getDuration() != null) lesson.setDuration(request.getDuration());
-        if (request.getOrderIndex() != null) lesson.setOrderIndex(request.getOrderIndex());
+        lessonMapper.updateLesson(lesson, request);
 
         lesson = lessonRepository.save(lesson);
-        return mapToResponse(lesson);
+        return lessonMapper.toLessonResponse(lesson);
     }
 
     public void deleteLesson(Long id) {
         Lesson lesson = lessonRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
         lessonRepository.delete(lesson);
-    }
-
-    private LessonResponse mapToResponse(Lesson lesson) {
-        return LessonResponse.builder()
-                .lessonId(lesson.getLessonId())
-                .chapterId(lesson.getChapterId())
-                .title(lesson.getTitle())
-                .content(lesson.getContent())
-                .videoUrl(lesson.getVideoUrl())
-                .duration(lesson.getDuration())
-                .orderIndex(lesson.getOrderIndex())
-                .createdDate(lesson.getCreatedDate())
-                .build();
     }
 }

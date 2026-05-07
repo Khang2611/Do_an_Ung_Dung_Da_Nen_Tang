@@ -10,6 +10,7 @@ import org.example.khoahoc.dto.response.ResourceResponse;
 import org.example.khoahoc.entity.Resource;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
+import org.example.khoahoc.mapper.ResourceMapper;
 import org.example.khoahoc.repository.ResourceRepository;
 import org.springframework.stereotype.Service;
 
@@ -23,65 +24,44 @@ import java.util.stream.Collectors;
 public class ResourceService {
 
     ResourceRepository resourceRepository;
+    ResourceMapper resourceMapper;
 
     public ResourceResponse createResource(ResourceCreationRequest request) {
         log.info("Creating new resource with name: {}", request.getName());
 
-        Resource resource = Resource.builder()
-                .lessonId(request.getLessonId())
-                .name(request.getName())
-                .url(request.getUrl())
-                .type(request.getType())
-                .build();
+        Resource resource = resourceMapper.toResource(request);
 
         resource = resourceRepository.save(resource);
-        return mapToResponse(resource);
+        return resourceMapper.toResourceResponse(resource);
     }
 
     public ResourceResponse getResource(Long id) {
         Resource resource = resourceRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
-        return mapToResponse(resource);
+        return resourceMapper.toResourceResponse(resource);
     }
 
     public List<ResourceResponse> getAllResources() {
-        return resourceRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return resourceMapper.toResourceResponseList(resourceRepository.findAll());
     }
 
     public List<ResourceResponse> getResourcesByLessonId(Long lessonId) {
-        return resourceRepository.findByLessonId(lessonId).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return resourceMapper.toResourceResponseList(resourceRepository.findByLessonId(lessonId));
     }
 
     public ResourceResponse updateResource(Long id, ResourceUpdateRequest request) {
         Resource resource = resourceRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        if (request.getName() != null) resource.setName(request.getName());
-        if (request.getUrl() != null) resource.setUrl(request.getUrl());
-        if (request.getType() != null) resource.setType(request.getType());
+        resourceMapper.updateResource(resource, request);
 
         resource = resourceRepository.save(resource);
-        return mapToResponse(resource);
+        return resourceMapper.toResourceResponse(resource);
     }
 
     public void deleteResource(Long id) {
         Resource resource = resourceRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
         resourceRepository.delete(resource);
-    }
-
-    private ResourceResponse mapToResponse(Resource resource) {
-        return ResourceResponse.builder()
-                .resourceId(resource.getResourceId())
-                .lessonId(resource.getLessonId())
-                .name(resource.getName())
-                .url(resource.getUrl())
-                .type(resource.getType())
-                .createdDate(resource.getCreatedDate())
-                .build();
     }
 }

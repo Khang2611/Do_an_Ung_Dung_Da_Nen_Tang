@@ -7,9 +7,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.khoahoc.dto.request.EnrollmentCreationRequest;
 import org.example.khoahoc.dto.request.EnrollmentUpdateRequest;
 import org.example.khoahoc.dto.response.EnrollmentResponse;
+import org.example.khoahoc.dto.response.MyEnrollmentResponse;
+import org.example.khoahoc.entity.Course;
 import org.example.khoahoc.entity.Enrollment;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
+import org.example.khoahoc.mapper.EnrollmentMapper;
+import org.example.khoahoc.repository.CourseRepository;
 import org.example.khoahoc.repository.EnrollmentRepository;
 import org.springframework.stereotype.Service;
 
@@ -23,44 +27,60 @@ import java.util.stream.Collectors;
 public class EnrollmentService {
 
     EnrollmentRepository enrollmentRepository;
+    EnrollmentMapper enrollmentMapper;
+    CourseRepository courseRepository;
 
     public EnrollmentResponse createEnrollment(EnrollmentCreationRequest request) {
         log.info("Creating new enrollment for userId: {}, courseId: {}", request.getUserId(), request.getCourseId());
 
         if (enrollmentRepository.findByUserIdAndCourseId(request.getUserId(), request.getCourseId()).isPresent()) {
-            throw new RuntimeException("User is already enrolled in this course"); // You could add ENROLLMENT_EXISTED to ErrorCode
+            throw new AppException(ErrorCode.ENROLLMENT_EXISTED);
         }
 
-        Enrollment enrollment = Enrollment.builder()
-                .userId(request.getUserId())
-                .courseId(request.getCourseId())
-                .build(); // progress and status are handled by @PrePersist
+        Enrollment enrollment = enrollmentMapper.toEnrollment(request);
 
         enrollment = enrollmentRepository.save(enrollment);
-        return mapToResponse(enrollment);
+        return enrollmentMapper.toEnrollmentResponse(enrollment);
     }
 
     public EnrollmentResponse getEnrollment(Long id) {
         Enrollment enrollment = enrollmentRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
-        return mapToResponse(enrollment);
+        return enrollmentMapper.toEnrollmentResponse(enrollment);
     }
 
     public List<EnrollmentResponse> getAllEnrollments() {
-        return enrollmentRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return enrollmentMapper.toEnrollmentResponseList(enrollmentRepository.findAll());
     }
 
     public List<EnrollmentResponse> getEnrollmentsByUserId(Long userId) {
-        return enrollmentRepository.findByUserId(userId).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        return enrollmentMapper.toEnrollmentResponseList(enrollmentRepository.findByUserId(userId));
     }
     
     public List<EnrollmentResponse> getEnrollmentsByCourseId(Long courseId) {
-        return enrollmentRepository.findByCourseId(courseId).stream()
-                .map(this::mapToResponse)
+        return enrollmentMapper.toEnrollmentResponseList(enrollmentRepository.findByCourseId(courseId));
+    }
+
+    /**
+     * Lấy danh sách khóa học đã đăng ký của user hiện tại,
+     * kèm đầy đủ thông tin khóa học (tên, mô tả, giá).
+     */
+    public List<MyEnrollmentResponse> getMyEnrollments(Long userId) {
+        return enrollmentRepository.findByUserId(userId).stream()
+                .map(enrollment -> {
+                    Course course = courseRepository.findById(enrollment.getCourseId())
+                            .orElse(null);
+                    return MyEnrollmentResponse.builder()
+                            .enrollmentId(enrollment.getEnrollmentId())
+                            .status(enrollment.getStatus())
+                            .progress(enrollment.getProgress())
+                            .enrolledAt(enrollment.getCreatedDate())
+                            .courseId(enrollment.getCourseId())
+                            .courseTitle(course != null ? course.getTitle() : "Không rõ")
+                            .courseDescription(course != null ? course.getDescription() : null)
+                            .coursePrice(course != null ? course.getPrice() : null)
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
@@ -68,27 +88,15 @@ public class EnrollmentService {
         Enrollment enrollment = enrollmentRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
 
-        if (request.getProgress() != null) enrollment.setProgress(request.getProgress());
-        if (request.getStatus() != null) enrollment.setStatus(request.getStatus());
+        enrollmentMapper.updateEnrollment(enrollment, request);
 
         enrollment = enrollmentRepository.save(enrollment);
-        return mapToResponse(enrollment);
+        return enrollmentMapper.toEnrollmentResponse(enrollment);
     }
 
     public void deleteEnrollment(Long id) {
         Enrollment enrollment = enrollmentRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
         enrollmentRepository.delete(enrollment);
-    }
-
-    private EnrollmentResponse mapToResponse(Enrollment enrollment) {
-        return EnrollmentResponse.builder()
-                .enrollmentId(enrollment.getEnrollmentId())
-                .userId(enrollment.getUserId())
-                .courseId(enrollment.getCourseId())
-                .progress(enrollment.getProgress())
-                .status(enrollment.getStatus())
-                .createdDate(enrollment.getCreatedDate())
-                .build();
     }
 }

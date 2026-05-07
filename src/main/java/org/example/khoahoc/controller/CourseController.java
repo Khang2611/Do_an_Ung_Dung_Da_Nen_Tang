@@ -26,28 +26,43 @@ public class CourseController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ApiResponse<CourseResponse>> createCourse(@RequestBody CourseCreationRequest request) {
-        return ResponseEntity.ok(ApiResponse.<CourseResponse>builder()
-                .code(200)
-                .message("Tạo khóa học thành công.")
-                .result(courseService.createCourse(request))
-                .build());
+        ApiResponse<CourseResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Tạo khóa học thành công.");
+        response.setResult(courseService.createCourse(request));
+        return ResponseEntity.ok(response);
     }
 
     // Tất cả người dùng đã đăng nhập đều xem được khóa học
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<List<CourseResponse>>> getAllCourses() {
-        return ResponseEntity.ok(ApiResponse.<List<CourseResponse>>builder()
-                .result(courseService.getAllCourses())
-                .build());
+        ApiResponse<List<CourseResponse>> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(courseService.getAllCourses());
+        return ResponseEntity.ok(response);
+    }
+
+    // Lấy danh sách khóa học mà user hiện tại đã đăng ký
+    @GetMapping("/myCourse")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
+    public ResponseEntity<ApiResponse<List<CourseResponse>>> getMyCourse() {
+        ApiResponse<List<CourseResponse>> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Danh sách khóa học của bạn.");
+        response.setResult(courseService.getMyCourses());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<CourseResponse>> getCourse(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.<CourseResponse>builder()
-                .result(courseService.getCourse(id))
-                .build());
+        ApiResponse<CourseResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(courseService.getCourse(id));
+        return ResponseEntity.ok(response);
     }
 
     // ADMIN , TEACHER mới được sửa/xóa khóa học
@@ -55,17 +70,20 @@ public class CourseController {
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ApiResponse<CourseResponse>> updateCourse(@PathVariable Long id,
             @RequestBody CourseUpdateRequest request) {
-        return ResponseEntity.ok(ApiResponse.<CourseResponse>builder()
-                .result(courseService.updateCourse(id, request))
-                .build());
+        ApiResponse<CourseResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(courseService.updateCourse(id, request));
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteCourse(@PathVariable Long id) {
         courseService.deleteCourse(id);
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .message("Xóa khóa học thành công.")
-                .build());
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Xóa khóa học thành công.");
+        return ResponseEntity.ok(response);
     }
 }

@@ -19,4 +19,10 @@ public class PaymentTransactionResponse {
     String status;
     String ipAddress;
     LocalDateTime createdDate;
+
+    // ── THÊM MỚI ──────────────────────────────────────────────────────────────
+    // URL để frontend redirect người dùng sang Payment Gateway :8090.
+    // Populated bởi PaymentTransactionService sau khi tạo transaction.
+    String gatewayUrl;
+    // ──────────────────────────────────────────────────────────────────────────
 }

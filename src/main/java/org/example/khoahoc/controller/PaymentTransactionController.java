@@ -37,20 +37,22 @@ public class PaymentTransactionController {
         }
         request.setIpAddress(ipAddress);
 
-        return ResponseEntity.ok(ApiResponse.<PaymentTransactionResponse>builder()
-                .code(200)
-                .message("Tạo giao dịch thanh toán thành công.")
-                .result(paymentTransactionService.createTransaction(request))
-                .build());
+        ApiResponse<PaymentTransactionResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Tạo giao dịch thanh toán thành công.");
+        response.setResult(paymentTransactionService.createTransaction(request));
+        return ResponseEntity.ok(response);
     }
 
     // Chỉ ADMIN xem toàn bộ giao dịch
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<PaymentTransactionResponse>>> getAllTransactions() {
-        return ResponseEntity.ok(ApiResponse.<List<PaymentTransactionResponse>>builder()
-                .result(paymentTransactionService.getAllTransactions())
-                .build());
+        ApiResponse<List<PaymentTransactionResponse>> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(paymentTransactionService.getAllTransactions());
+        return ResponseEntity.ok(response);
     }
 
     // ADMIN xem giao dịch theo orderId
@@ -58,18 +60,22 @@ public class PaymentTransactionController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<PaymentTransactionResponse>>> getTransactionsByOrderId(
             @PathVariable Long orderId) {
-        return ResponseEntity.ok(ApiResponse.<List<PaymentTransactionResponse>>builder()
-                .result(paymentTransactionService.getTransactionsByOrderId(orderId))
-                .build());
+        ApiResponse<List<PaymentTransactionResponse>> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(paymentTransactionService.getTransactionsByOrderId(orderId));
+        return ResponseEntity.ok(response);
     }
 
     // USER/ADMIN xem giao dịch theo id
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<ApiResponse<PaymentTransactionResponse>> getTransaction(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.<PaymentTransactionResponse>builder()
-                .result(paymentTransactionService.getTransaction(id))
-                .build());
+        ApiResponse<PaymentTransactionResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(paymentTransactionService.getTransaction(id));
+        return ResponseEntity.ok(response);
     }
 
     // Chỉ ADMIN mới được sửa/xóa giao dịch
@@ -77,17 +83,20 @@ public class PaymentTransactionController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<PaymentTransactionResponse>> updateTransaction(@PathVariable Long id,
             @RequestBody PaymentTransactionUpdateRequest request) {
-        return ResponseEntity.ok(ApiResponse.<PaymentTransactionResponse>builder()
-                .result(paymentTransactionService.updateTransaction(id, request))
-                .build());
+        ApiResponse<PaymentTransactionResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(paymentTransactionService.updateTransaction(id, request));
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteTransaction(@PathVariable Long id) {
         paymentTransactionService.deleteTransaction(id);
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .message("Xóa giao dịch thanh toán thành công.")
-                .build());
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Xóa giao dịch thanh toán thành công.");
+        return ResponseEntity.ok(response);
     }
 }

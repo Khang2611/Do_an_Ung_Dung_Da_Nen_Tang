@@ -26,53 +26,62 @@ public class ResourceController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ResourceResponse>> createResource(@RequestBody ResourceCreationRequest request) {
-        return ResponseEntity.ok(ApiResponse.<ResourceResponse>builder()
-                .code(200)
-                .message("Tạo tài liệu thành công.")
-                .result(resourceService.createResource(request))
-                .build());
+        ApiResponse<ResourceResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Tạo tài liệu thành công.");
+        response.setResult(resourceService.createResource(request));
+        return ResponseEntity.ok(response);
     }
 
     // Tất cả người dùng đã đăng nhập đều xem được tài liệu
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<List<ResourceResponse>>> getAllResources() {
-        return ResponseEntity.ok(ApiResponse.<List<ResourceResponse>>builder()
-                .result(resourceService.getAllResources())
-                .build());
+        ApiResponse<List<ResourceResponse>> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(resourceService.getAllResources());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/lesson/{lessonId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<List<ResourceResponse>>> getResourcesByLessonId(@PathVariable Long lessonId) {
-        return ResponseEntity.ok(ApiResponse.<List<ResourceResponse>>builder()
-                .result(resourceService.getResourcesByLessonId(lessonId))
-                .build());
+        ApiResponse<List<ResourceResponse>> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(resourceService.getResourcesByLessonId(lessonId));
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<ResourceResponse>> getResource(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.<ResourceResponse>builder()
-                .result(resourceService.getResource(id))
-                .build());
+        ApiResponse<ResourceResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(resourceService.getResource(id));
+        return ResponseEntity.ok(response);
     }
 
     // ADMIN và TEACHER mới được sửa/xóa tài liệu
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ResourceResponse>> updateResource(@PathVariable Long id, @RequestBody ResourceUpdateRequest request) {
-        return ResponseEntity.ok(ApiResponse.<ResourceResponse>builder()
-                .result(resourceService.updateResource(id, request))
-                .build());
+        ApiResponse<ResourceResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(resourceService.updateResource(id, request));
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteResource(@PathVariable Long id) {
         resourceService.deleteResource(id);
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .message("Xóa tài liệu thành công.")
-                .build());
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Xóa tài liệu thành công.");
+        return ResponseEntity.ok(response);
     }
 }

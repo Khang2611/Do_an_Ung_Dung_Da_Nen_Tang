@@ -26,46 +26,54 @@ public class LearningProgressController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<ApiResponse<LearningProgressResponse>> createLearningProgress(@RequestBody LearningProgressCreationRequest request) {
-        return ResponseEntity.ok(ApiResponse.<LearningProgressResponse>builder()
-                .code(200)
-                .message("Tạo tiến độ học tập thành công.")
-                .result(learningProgressService.createLearningProgress(request))
-                .build());
+        ApiResponse<LearningProgressResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Tạo tiến độ học tập thành công.");
+        response.setResult(learningProgressService.createLearningProgress(request));
+        return ResponseEntity.ok(response);
     }
 
     // Chỉ ADMIN xem toàn bộ
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<LearningProgressResponse>>> getAllLearningProgresses() {
-        return ResponseEntity.ok(ApiResponse.<List<LearningProgressResponse>>builder()
-                .result(learningProgressService.getAllLearningProgresses())
-                .build());
+        ApiResponse<List<LearningProgressResponse>> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(learningProgressService.getAllLearningProgresses());
+        return ResponseEntity.ok(response);
     }
 
     // USER/ADMIN/TEACHER xem tiến độ theo enrollmentId
     @GetMapping("/enrollment/{enrollmentId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<List<LearningProgressResponse>>> getLearningProgressesByEnrollmentId(@PathVariable Long enrollmentId) {
-        return ResponseEntity.ok(ApiResponse.<List<LearningProgressResponse>>builder()
-                .result(learningProgressService.getLearningProgressesByEnrollmentId(enrollmentId))
-                .build());
+        ApiResponse<List<LearningProgressResponse>> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(learningProgressService.getLearningProgressesByEnrollmentId(enrollmentId));
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
     public ResponseEntity<ApiResponse<LearningProgressResponse>> getLearningProgress(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.<LearningProgressResponse>builder()
-                .result(learningProgressService.getLearningProgress(id))
-                .build());
+        ApiResponse<LearningProgressResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(learningProgressService.getLearningProgress(id));
+        return ResponseEntity.ok(response);
     }
 
     // USER tự cập nhật tiến độ (đánh dấu hoàn thành), ADMIN cũng được
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<ApiResponse<LearningProgressResponse>> updateLearningProgress(@PathVariable Long id, @RequestBody LearningProgressUpdateRequest request) {
-        return ResponseEntity.ok(ApiResponse.<LearningProgressResponse>builder()
-                .result(learningProgressService.updateLearningProgress(id, request))
-                .build());
+        ApiResponse<LearningProgressResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(learningProgressService.updateLearningProgress(id, request));
+        return ResponseEntity.ok(response);
     }
 
     // Chỉ ADMIN mới được xóa tiến độ
@@ -73,8 +81,9 @@ public class LearningProgressController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteLearningProgress(@PathVariable Long id) {
         learningProgressService.deleteLearningProgress(id);
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .message("Xóa tiến độ học tập thành công.")
-                .build());
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Xóa tiến độ học tập thành công.");
+        return ResponseEntity.ok(response);
     }
 }

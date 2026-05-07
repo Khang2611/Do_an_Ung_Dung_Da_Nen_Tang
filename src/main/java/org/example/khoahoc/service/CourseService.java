@@ -10,10 +10,15 @@ import org.example.khoahoc.dto.response.CategoryResponse;
 import org.example.khoahoc.dto.response.CourseResponse;
 import org.example.khoahoc.entity.Category;
 import org.example.khoahoc.entity.Course;
+import org.example.khoahoc.entity.User;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
 import org.example.khoahoc.repository.CategoryRepository;
 import org.example.khoahoc.repository.CourseRepository;
+import org.example.khoahoc.repository.EnrollmentRepository;
+import org.example.khoahoc.repository.UserRepository;
+import org.example.khoahoc.mapper.CourseMapper;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,15 +32,14 @@ public class CourseService {
 
     CourseRepository courseRepository;
     CategoryRepository categoryRepository;
+    EnrollmentRepository enrollmentRepository;
+    UserRepository userRepository;
+    CourseMapper courseMapper;
 
     public CourseResponse createCourse(CourseCreationRequest request) {
         log.info("Creating new course with title: {}", request.getTitle());
 
-        Course course = Course.builder()
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .price(request.getPrice())
-                .build();
+        Course course = courseMapper.toCourse(request);
 
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
@@ -44,28 +48,37 @@ public class CourseService {
         }
 
         course = courseRepository.save(course);
-        return mapToResponse(course);
+        return courseMapper.toCourseResponse(course);
     }
 
     public CourseResponse getCourse(Long id) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
-        return mapToResponse(course);
+        return courseMapper.toCourseResponse(course);
     }
 
     public List<CourseResponse> getAllCourses() {
-        return courseRepository.findAll().stream()
-                .map(this::mapToResponse)
+        return courseMapper.toCourseResponseList(courseRepository.findAll());
+    }
+
+    public List<CourseResponse> getMyCourses() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        List<Long> courseIds = enrollmentRepository.findByUserId(currentUser.getUserId())
+                .stream()
+                .map(enrollment -> enrollment.getCourseId())
                 .collect(Collectors.toList());
+
+        return courseMapper.toCourseResponseList(courseRepository.findAllById(courseIds));
     }
 
     public CourseResponse updateCourse(Long id, CourseUpdateRequest request) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
 
-        if (request.getTitle() != null) course.setTitle(request.getTitle());
-        if (request.getDescription() != null) course.setDescription(request.getDescription());
-        if (request.getPrice() != null) course.setPrice(request.getPrice());
+        courseMapper.updateCourse(course, request);
 
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
@@ -74,32 +87,12 @@ public class CourseService {
         }
 
         course = courseRepository.save(course);
-        return mapToResponse(course);
+        return courseMapper.toCourseResponse(course);
     }
 
     public void deleteCourse(Long id) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
         courseRepository.delete(course);
-    }
-
-    private CourseResponse mapToResponse(Course course) {
-        CourseResponse response = CourseResponse.builder()
-                .courseId(course.getCourseId())
-                .title(course.getTitle())
-                .description(course.getDescription())
-                .price(course.getPrice())
-                .createdDate(course.getCreatedDate())
-                .build();
-
-        if (course.getCategory() != null) {
-            response.setCategory(CategoryResponse.builder()
-                    .categoryId(course.getCategory().getCategoryId())
-                    .name(course.getCategory().getName())
-                    .createdDate(course.getCategory().getCreatedDate())
-                    .build());
-        }
-
-        return response;
     }
 }
