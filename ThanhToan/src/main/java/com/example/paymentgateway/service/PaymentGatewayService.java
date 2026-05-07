@@ -11,6 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,13 +43,14 @@ public class PaymentGatewayService {
      */
     @Transactional
     public PaymentOrder createOrder(Long khoahocTransactionId, Long userId,
-                                    Double amount, String courseNames) {
+                                    Double amount, String courseNames, String ref) {
         PaymentOrder order = PaymentOrder.builder()
                 .khoahocTransactionId(khoahocTransactionId)
                 .userId(userId)
                 .amount(amount)
                 .courseNames(courseNames)
                 .status("PENDING")
+                .gatewayRef(ref) // Lưu trực tiếp mã TXN của LMS
                 .build();
         return paymentOrderRepository.save(order);
     }
@@ -59,9 +67,8 @@ public class PaymentGatewayService {
             throw new RuntimeException("Đơn hàng đã được xử lý, trạng thái hiện tại: " + order.getStatus());
         }
 
-        String gatewayRef = "GW-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase();
+        // Không tạo gatewayRef ngẫu nhiên nữa, dùng chung ref của LMS
         order.setPaymentMethod(paymentMethod);
-        order.setGatewayRef(gatewayRef);
         order.setStatus("PROCESSING");
         return paymentOrderRepository.save(order);
     }
@@ -117,31 +124,71 @@ public class PaymentGatewayService {
     // Internal: gọi webhook POST về KhoaHoc :8080
     // =========================================================
     private void sendWebhookToKhoaHoc(PaymentOrder order, String status) {
+        String timestamp = String.valueOf(Instant.now().toEpochMilli());
+        String nonce = UUID.randomUUID().toString();
+        BigDecimal amount = BigDecimal.valueOf(order.getAmount());
+        
+        // Cổng 8090 dùng khoahocTransactionId làm orderId
+        Long orderId = order.getKhoahocTransactionId();
+        Long userId = order.getUserId();
+        // Cổng 8080 mong đợi transactionRef gốc (thường là TXN-...) hoặc ref của Gateway. 
+        // Trong trường hợp này, mình gửi lại gatewayRef để nó báo lỗi (nếu LMS chưa map) 
+        // hoặc gửi kèm khoahocTransactionId để LMS tìm.
+        // Tạm thời mình map GatewayRef vào TransactionRef của LMS.
+        String transactionRef = order.getGatewayRef(); 
+
         WebhookCallbackRequest payload = WebhookCallbackRequest.builder()
-                .transactionId(order.getKhoahocTransactionId())
-                .transactionRef(order.getGatewayRef())
+                .transactionRef(transactionRef)
+                .orderId(orderId)
+                .userId(userId)
+                .amount(amount)
                 .status(status)
+                .timestamp(timestamp)
+                .nonce(nonce)
                 .build();
+
+        // 1. Tạo chuỗi Payload để mã hóa (Giống hệt bên LMS)
+        String payloadString = transactionRef + "|" +
+                orderId + "|" +
+                userId + "|" +
+                amount.setScale(2, RoundingMode.HALF_UP).toPlainString() + "|" +
+                status + "|" +
+                timestamp + "|" +
+                nonce;
+
+        // 2. Ký HMAC-SHA256
+        String signature = generateHmacSHA256(payloadString, secretKey);
 
         try {
             khoahocWebClient.post()
                     .uri(khoahocWebhookUrl)
                     .header("X-Api-Key", apiKey)
-                    .header("X-Secret-Key", secretKey)
+                    .header("X-Signature", signature) // Gửi chữ ký thay vì secretKey
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(payload)
                     .retrieve()
                     .bodyToMono(String.class)
                     .subscribe(
-                            response -> log.info("Webhook gửi về KhoaHoc thành công. TransactionId={}, Status={}, Response={}",
-                                    order.getKhoahocTransactionId(), status, response),
-                            error -> log.error("LỖI gọi webhook về KhoaHoc. TransactionId={}, Error={}",
-                                    order.getKhoahocTransactionId(), error.getMessage())
+                            response -> log.info("Webhook gửi về KhoaHoc thành công. Ref={}, Status={}, Response={}",
+                                    transactionRef, status, response),
+                            error -> log.error("LỖI gọi webhook về KhoaHoc. Ref={}, Error={}",
+                                    transactionRef, error.getMessage())
                     );
         } catch (Exception e) {
-            // Không throw — gateway đã xử lý xong phần mình, lỗi webhook chỉ log lại
-            log.error("LỖI khi setup webhook về KhoaHoc. TransactionId={}, Error={}",
-                    order.getKhoahocTransactionId(), e.getMessage());
+            log.error("LỖI khi setup webhook về KhoaHoc. Ref={}, Error={}",
+                    transactionRef, e.getMessage());
+        }
+    }
+
+    private String generateHmacSHA256(String data, String key) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(secretKeySpec);
+            byte[] hmacBytes = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hmacBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi tạo chữ ký HMAC", e);
         }
     }
 }

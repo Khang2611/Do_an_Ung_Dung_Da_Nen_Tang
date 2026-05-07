@@ -10,7 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Controller phục vụ frontend portal (Thymeleaf).
+ * Controller phục vụ frontend portal 
  * Người dùng được redirect từ KhoaHoc sang đây để thanh toán.
  */
 @Controller
@@ -24,7 +24,7 @@ public class PaymentPortalController {
     private int simulationDelay;
 
     /**
-     * BƯỚC 1: KhoaHoc redirect user sang đây.
+     * KhoaHoc redirect user sang đây.
      * URL: GET /pay?transactionId=X&userId=Y&amount=Z&courseNames=...&returnUrl=...
      *
      * Gateway tạo PaymentOrder, hiển thị trang chọn phương thức thanh toán.
@@ -36,12 +36,13 @@ public class PaymentPortalController {
             @RequestParam Double amount,
             @RequestParam(defaultValue = "") String courseNames,
             @RequestParam(required = false) String returnUrl,
+            @RequestParam(required = false) String ref,
             Model model) {
 
-        log.info("Nhận yêu cầu thanh toán: transactionId={}, userId={}, amount={}", transactionId, userId, amount);
+        log.info("Nhận yêu cầu thanh toán: transactionId={}, userId={}, amount={}, ref={}", transactionId, userId, amount, ref);
 
-        // Tạo đơn hàng trong Gateway DB
-        PaymentOrder order = paymentGatewayService.createOrder(transactionId, userId, amount, courseNames);
+        // Tạo đơn hàng trong Gateway DB, dùng ref của LMS làm gatewayRef
+        PaymentOrder order = paymentGatewayService.createOrder(transactionId, userId, amount, courseNames, ref);
 
         model.addAttribute("order", order);
         model.addAttribute("returnUrl", returnUrl != null ? returnUrl : "http://localhost:8080");

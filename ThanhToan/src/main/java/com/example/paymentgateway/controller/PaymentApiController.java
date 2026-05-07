@@ -81,10 +81,10 @@ public class PaymentApiController {
         log.info("Nhận yêu cầu khởi tạo từ LMS: Ref={}, Amount={}", transactionRef, amount);
 
         // 2. Tạo link dẫn đến trang giao diện thanh toán (Portal) của Gateway
-        // Link này trỏ tới PaymentPortalController (@GetMapping("/pay"))
+        // Kèm theo transactionRef gốc của LMS vào tham số 'ref'
         String paymentUrl = String.format(
-                "http://localhost:8090/pay?transactionId=%d&userId=%d&amount=%.2f&returnUrl=%s",
-                orderId, userId, amount, returnUrl
+                "http://localhost:8090/pay?transactionId=%d&userId=%d&amount=%.2f&returnUrl=%s&ref=%s",
+                orderId, userId, amount, returnUrl != null ? returnUrl : "", transactionRef
         );
 
         // 3. Trả về cho LMS dưới dạng JSON: { "paymentUrl": "..." }
