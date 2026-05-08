@@ -4,6 +4,7 @@ import org.example.khoahoc.entity.LearningProgress;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,4 +13,11 @@ import java.util.Optional;
 public interface LearningProgressRepository extends JpaRepository<LearningProgress, Long>, JpaSpecificationExecutor<LearningProgress> {
     List<LearningProgress> findByEnrollmentId(Long enrollmentId);
     Optional<LearningProgress> findByEnrollmentIdAndLessonId(Long enrollmentId, Long lessonId);
+
+    // Đếm số bài đã hoàn thành (dùng để tính % tiến độ)
+    long countByEnrollmentIdAndIsCompleted(Long enrollmentId, Boolean isCompleted);
+
+    // Xóa toàn bộ progress của một enrollment (khi hủy đăng ký)
+    @Transactional
+    void deleteByEnrollmentId(Long enrollmentId);
 }

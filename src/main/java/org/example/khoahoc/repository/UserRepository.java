@@ -11,5 +11,11 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
     boolean existsByUsername(String username);
     Optional<User> findByUsername(String username);
+
+    // Kiểm tra tồn tại theo email (dùng khi đăng ký)
+    boolean existsByEmail(String email);
+
+    // Tìm theo email (dùng cho flow quên mật khẩu / xác thực)
+    Optional<User> findByEmail(String email);
 }
 
