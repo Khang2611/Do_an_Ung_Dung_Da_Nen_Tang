@@ -10,4 +10,10 @@ import java.util.List;
 @Repository
 public interface LessonRepository extends JpaRepository<Lesson, Long>, JpaSpecificationExecutor<Lesson> {
     List<Lesson> findByChapterId(Long chapterId);
+
+    // Lấy lessons của chapter theo thứ tự orderIndex
+    List<Lesson> findByChapterIdOrderByOrderIndexAsc(Long chapterId);
+
+    // Đếm số lesson trong một chapter
+    long countByChapterId(Long chapterId);
 }

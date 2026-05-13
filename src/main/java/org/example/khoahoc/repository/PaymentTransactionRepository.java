@@ -12,4 +12,13 @@ import java.util.Optional;
 public interface PaymentTransactionRepository extends JpaRepository<PaymentTransaction, Long>, JpaSpecificationExecutor<PaymentTransaction> {
     List<PaymentTransaction> findByOrderId(Long orderId);
     Optional<PaymentTransaction> findByTransactionRef(String transactionRef);
+
+    // Lấy lịch sử giao dịch theo người dùng
+    List<PaymentTransaction> findByUserId(Long userId);
+
+    // Lấy giao dịch theo trạng thái (SUCCESS, FAILED, PENDING)
+    List<PaymentTransaction> findByStatus(String status);
+
+    // Lấy giao dịch theo user và trạng thái
+    List<PaymentTransaction> findByUserIdAndStatus(Long userId, String status);
 }

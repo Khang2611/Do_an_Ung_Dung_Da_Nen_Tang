@@ -15,7 +15,6 @@ import org.example.khoahoc.repository.TransactionItemRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +26,8 @@ public class TransactionItemService {
     TransactionItemMapper transactionItemMapper;
 
     public TransactionItemResponse createTransactionItem(TransactionItemCreationRequest request) {
-        log.info("Creating new transaction item for transactionId: {}, courseId: {}", request.getTransactionId(), request.getCourseId());
+        log.info("Creating new transaction item for transactionId: {}, courseId: {}", request.getTransactionId(),
+                request.getCourseId());
 
         TransactionItem transactionItem = transactionItemMapper.toTransactionItem(request);
 
@@ -46,7 +46,8 @@ public class TransactionItemService {
     }
 
     public List<TransactionItemResponse> getTransactionItemsByTransactionId(Long transactionId) {
-        return transactionItemMapper.toTransactionItemResponseList(transactionItemRepository.findByTransactionId(transactionId));
+        return transactionItemMapper
+                .toTransactionItemResponseList(transactionItemRepository.findByTransactionId(transactionId));
     }
 
     public TransactionItemResponse updateTransactionItem(Long id, TransactionItemUpdateRequest request) {

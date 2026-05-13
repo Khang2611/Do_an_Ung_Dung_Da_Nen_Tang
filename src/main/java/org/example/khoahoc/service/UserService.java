@@ -17,7 +17,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,24 +35,9 @@ public class UserService {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
-        Role userRole = Role.USER;
-        if (request.getRole() != null && !request.getRole().isEmpty()) {
-            try {
-                Role requestedRole = Role.valueOf(request.getRole().toUpperCase());
-                // Không cho phép tự đăng ký quyền ADMIN qua API public
-                if (requestedRole == Role.ADMIN) {
-                    throw new AppException(ErrorCode.UNAUTHORIZED_ACTION);
-                }
-                userRole = requestedRole;
-            } catch (IllegalArgumentException e) {
-                // Nếu truyền string tào lao thì mặc định vẫn là USER
-                userRole = Role.USER;
-            }
-        }
-
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(userRole);
+        user.setRole(Role.USER);
 
         user = userRepository.save(user);
         return userMapper.toUserResponse(user);
@@ -76,13 +60,13 @@ public class UserService {
         // Kiểm tra quyền sở hữu (chỉ cho phép cập nhật chính mình hoặc là ADMIN)
         User currentUser = userRepository.findByUsername(authenticatedUsername)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-                
+
         if (!user.getUserId().equals(currentUser.getUserId()) && currentUser.getRole() != Role.ADMIN) {
             throw new AppException(ErrorCode.UNAUTHORIZED_ACTION);
         }
 
         userMapper.updateUser(user, request);
-        
+
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }

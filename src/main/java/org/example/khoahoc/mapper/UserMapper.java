@@ -17,7 +17,6 @@ public interface UserMapper {
     @Mapping(target = "createdDate", ignore = true)
     User toUser(UserCreationRequest request);
 
-    @Mapping(target = "role", expression = "java(user.getRole() != null ? user.getRole().name() : null)")
     UserResponse toUserResponse(User user);
 
     List<UserResponse> toUserResponseList(List<User> users);

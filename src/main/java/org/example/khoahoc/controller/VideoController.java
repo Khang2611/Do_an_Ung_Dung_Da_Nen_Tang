@@ -9,8 +9,6 @@ import org.example.khoahoc.repository.LessonRepository;
 import org.example.khoahoc.repository.UserRepository;
 import org.example.khoahoc.service.VideoService;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -43,7 +41,7 @@ public class VideoController {
     public ResponseEntity<String> getHlsPlaylist(@PathVariable Long lessonId) {
         Long userId = getCurrentUserId();
         String playlistContent = videoService.getProxyHlsPlaylist(lessonId, userId);
-        
+
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "application/x-mpegURL")
                 // Quan trọng: Chặn cache để URL luôn mới
