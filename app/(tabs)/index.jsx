@@ -1,23 +1,14 @@
-<<<<<<< HEAD
 import { useMemo, useCallback, useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { getAllCourses, getMyCourses } from '../../services/courseService';
-=======
-import { useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { router } from 'expo-router';
-import { useAuth } from '../../hooks/useAuth';
-import { COURSES, ENROLLMENTS, PROGRESS } from '../../constants/mockData';
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
 import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
 import CourseCard from '../../components/CourseCard';
 
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
-<<<<<<< HEAD
   const [allCourses, setAllCourses] = useState([]);
   const [myCourses, setMyCourses]   = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -32,66 +23,55 @@ export default function HomeScreen() {
   }, []);
 
   const featured = useMemo(() => allCourses.slice(0, 3), [allCourses]);
-=======
-  const enrolled = useMemo(
-    () => COURSES.filter(c => ENROLLMENTS.includes(c.id)),
-    []
-  );
-
-  const featured = useMemo(() => COURSES.slice(0, 3), []);
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
 
   const goToMyLearning = useCallback(() => router.push('/(tabs)/my-learning'), []);
   const goToExplore    = useCallback(() => router.push('/(tabs)/explore'), []);
   const goToProfile    = useCallback(() => router.push('/(tabs)/profile'), []);
 
-<<<<<<< HEAD
+  const handleLogout = useCallback(() => {
+    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn thoát?', [
+      { text: 'Hủy', style: 'cancel' },
+      { text: 'Đăng xuất', style: 'destructive', onPress: logout },
+    ]);
+  }, [logout]);
+
   if (loading) return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <ActivityIndicator size="large" color={COLORS.primary} />
     </View>
   );
 
-=======
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
   return (
     <ScrollView style={s.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={s.header}>
         <View>
           <Text style={s.greeting}>Xin chào 👋</Text>
-<<<<<<< HEAD
           <Text style={s.userName}>{user?.username}</Text>
         </View>
-        <TouchableOpacity onPress={goToProfile}>
-          <Image 
-            source={{ uri: user?.avatar || 'https://via.placeholder.com/100' }} 
-            style={s.avatar} 
-          />
-=======
-          <Text style={s.userName}>{user?.name}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity onPress={handleLogout} style={s.logoutIconBtn}>
+            <Text style={{ fontSize: 18 }}>🚪</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={goToProfile}>
+            <Image 
+              source={{ uri: user?.avatar || 'https://via.placeholder.com/100' }} 
+              style={s.avatar} 
+            />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={goToProfile}>
-          <Image source={{ uri: user?.avatar }} style={s.avatar} />
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
-        </TouchableOpacity>
       </View>
 
       {/* Banner */}
       <View style={s.banner}>
         <Text style={s.bannerTitle}>Tiếp tục học tập{'\n'}hôm nay! 🚀</Text>
-<<<<<<< HEAD
         <Text style={s.bannerSub}>Bạn đang học {myCourses.length} khóa học</Text>
-=======
-        <Text style={s.bannerSub}>Bạn đang học {enrolled.length} khóa học</Text>
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
         <TouchableOpacity style={s.bannerBtn} onPress={goToMyLearning}>
           <Text style={s.bannerBtnText}>Xem khóa học →</Text>
         </TouchableOpacity>
       </View>
 
       {/* Tiếp tục học */}
-<<<<<<< HEAD
       {myCourses.length > 0 && (
         <Section title="Tiếp tục học" onMore={goToMyLearning}>
           {myCourses.map(course => {
@@ -112,26 +92,6 @@ export default function HomeScreen() {
                     <View style={[s.progressFill, { width: `${course.progress || 0}%` }]} />
                   </View>
                   <Text style={s.progressText}>{course.progress || 0}% hoàn thành</Text>
-=======
-      {enrolled.length > 0 && (
-        <Section title="Tiếp tục học" onMore={goToMyLearning}>
-          {enrolled.map(course => {
-            const prog = PROGRESS[course.id];
-            return (
-              <TouchableOpacity
-                key={course.id}
-                style={s.resumeCard}
-                onPress={() => router.push(`/course/${course.id}`)}
-              >
-                <Image source={{ uri: course.thumbnail }} style={s.resumeThumb} />
-                <View style={s.resumeInfo}>
-                  <Text style={s.resumeTitle} numberOfLines={2}>{course.title}</Text>
-                  <Text style={s.resumeInstructor}>{course.instructor}</Text>
-                  <View style={s.progressBar}>
-                    <View style={[s.progressFill, { width: `${prog?.percent || 0}%` }]} />
-                  </View>
-                  <Text style={s.progressText}>{prog?.percent || 0}% hoàn thành</Text>
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
                 </View>
               </TouchableOpacity>
             );
@@ -142,11 +102,7 @@ export default function HomeScreen() {
       {/* Khóa học nổi bật */}
       <Section title="Khóa học nổi bật" onMore={goToExplore}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 24 }}>
-<<<<<<< HEAD
           {featured.map(c => <CourseCard key={c.courseId} course={c} style={{ width: 240 }} />)}
-=======
-          {featured.map(c => <CourseCard key={c.id} course={c} style={{ width: 240 }} />)}
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
         </ScrollView>
       </Section>
 
@@ -173,6 +129,7 @@ const s = StyleSheet.create({
   greeting: { fontSize: 13, color: COLORS.textSecondary },
   userName: { fontSize: 20, fontWeight: '700', color: COLORS.text },
   avatar: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: COLORS.primaryLight },
+  logoutIconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
   banner: { margin: 20, borderRadius: RADIUS.xl, backgroundColor: COLORS.primary, padding: 24, ...SHADOW.md },
   bannerTitle: { fontSize: 22, fontWeight: '700', color: '#fff', lineHeight: 30 },
   bannerSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 6, marginBottom: 16 },

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /**
  * hooks/useAuth.js  ← THAY THẾ file gốc dùng mock data
  *
@@ -15,16 +14,11 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { login as loginApi, register as registerApi } from '../services/authService';
-=======
-import { createContext, useContext, useState, useCallback } from 'react';
-import { MOCK_USER } from '../constants/mockData';
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
+import { login as loginApi, register as registerApi, logout as logoutApi } from '../services/authService';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-<<<<<<< HEAD
   const [user, setUser]       = useState(null);
   const [token, setToken]     = useState(null);
   const [loading, setLoading] = useState(true); // đang khôi phục session
@@ -84,32 +78,32 @@ export function AuthProvider({ children }) {
 
   // ─── Đăng xuất ─────────────────────────────────────────────────────────────
   const logout = useCallback(async () => {
-    await Promise.all([
-      AsyncStorage.removeItem('token'),
-      AsyncStorage.removeItem('user'),
-    ]);
-    setToken(null);
-    setUser(null);
-    router.replace('/(auth)/login');
+    try {
+      console.log("Đang thực hiện đăng xuất...");
+      
+      // 1. Gọi API đăng xuất (để backend ghi nhận nếu cần)
+      await logoutApi().catch(() => {}); 
+
+      // 2. XÓA SẠCH DỮ LIỆU: token và user thông tin trong AsyncStorage
+      await AsyncStorage.multiRemove(['token', 'user']);
+
+      // 3. Cập nhật state về null ngay lập tức
+      setToken(null);
+      setUser(null);
+
+      // 4. Điều hướng về màn hình login
+      // Sử dụng replace để không cho phép quay lại trang cũ bằng nút back
+      router.replace('/(auth)/login');
+      
+      console.log("Đã xóa token và đăng xuất thành công.");
+
+    } catch (error) {
+      console.error("Lỗi khi đăng xuất:", error);
+    }
   }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
-=======
-  const [user, setUser] = useState(null);
-
-  const login = useCallback(async (email, password) => {
-    setUser(MOCK_USER);
-    return true;
-  }, []);
-
-  const logout = useCallback(async () => {
-    setUser(null);
-  }, []);
-
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
       {children}
     </AuthContext.Provider>
   );

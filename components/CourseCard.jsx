@@ -4,7 +4,6 @@ import { COLORS, RADIUS, SHADOW } from '../constants/theme';
 
 export default function CourseCard({ course, style }) {
   const isFree = course.price === 0;
-<<<<<<< HEAD
   const categoryName = course.category?.name || 'Chưa phân loại';
 
   return (
@@ -16,16 +15,10 @@ export default function CourseCard({ course, style }) {
         source={{ uri: course.thumbnail || 'https://via.placeholder.com/150' }} 
         style={s.thumb} 
       />
-=======
-  return (
-    <TouchableOpacity style={[s.card, style]} onPress={() => router.push(`/course/${course.id}`)}>
-      <Image source={{ uri: course.thumbnail }} style={s.thumb} />
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
       <View style={s.body}>
         <View style={s.tagRow}>
           <View style={[s.tag, { backgroundColor: isFree ? '#D1FAE5' : COLORS.primaryLight }]}>
             <Text style={[s.tagText, { color: isFree ? COLORS.success : COLORS.primary }]}>
-<<<<<<< HEAD
               {isFree ? 'Miễn phí' : categoryName}
             </Text>
           </View>
@@ -44,24 +37,6 @@ export default function CourseCard({ course, style }) {
         </View>
         <Text style={s.price}>
           {isFree ? 'Miễn phí' : `${(course.price || 0).toLocaleString('vi-VN')}đ`}
-=======
-              {isFree ? 'Miễn phí' : course.category}
-            </Text>
-          </View>
-          <View style={s.levelTag}>
-            <Text style={s.levelText}>{course.level}</Text>
-          </View>
-        </View>
-        <Text style={s.title} numberOfLines={2}>{course.title}</Text>
-        <Text style={s.instructor}>{course.instructor}</Text>
-        <View style={s.footer}>
-          <Text style={s.rating}>⭐ {course.rating}</Text>
-          <Text style={s.dot}>·</Text>
-          <Text style={s.students}>{course.students.toLocaleString()} học viên</Text>
-        </View>
-        <Text style={s.price}>
-          {isFree ? 'Miễn phí' : `${course.price.toLocaleString('vi-VN')}đ`}
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
         </Text>
       </View>
     </TouchableOpacity>

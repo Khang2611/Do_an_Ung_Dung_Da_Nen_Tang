@@ -32,3 +32,10 @@ export const register = async (payload) => {
   const { data } = await axiosInstance.post('/auth/register', payload);
   return data.result;
 };
+
+/**
+ * Đăng xuất
+ */
+export const logout = async () => {
+  await axiosInstance.post('/auth/logout');
+};

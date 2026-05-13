@@ -46,11 +46,17 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('user');
-      // Phát sự kiện để AuthProvider xử lý logout (xem useAuth.js)
-      // Không import router trực tiếp ở đây để tránh circular dependency
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      console.warn("Phiên làm việc hết hạn hoặc không có quyền. Đang xóa token...");
+      
+      // Xóa sạch dữ liệu trong AsyncStorage
+      await AsyncStorage.multiRemove(['token', 'user']);
+      
+      // Điều hướng (Web)
+      if (Platform.OS === 'web') {
+        window.location.href = '/(auth)/login';
+      }
+      // Note: Trên mobile, việc đổi user thành null sẽ kích hoạt chuyển màn hình ở index.jsx
     }
     return Promise.reject(error);
   }

@@ -1,18 +1,10 @@
-import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
-<<<<<<< HEAD
-=======
-import { ENROLLMENTS, PROGRESS } from '../../constants/mockData';
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
 import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
-<<<<<<< HEAD
-=======
-  const totalCompleted = Object.values(PROGRESS).reduce((a, p) => a + p.completed, 0);
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
 
   const MENU = [
     { icon: '📚', label: 'Khóa học của tôi', onPress: () => router.push('/(tabs)/my-learning') },
@@ -22,40 +14,39 @@ export default function ProfileScreen() {
     { icon: '❓', label: 'Trợ giúp & Hỗ trợ', onPress: () => {} },
   ];
 
-  const handleLogout = () => Alert.alert('Đăng xuất', 'Bạn có chắc muốn đăng xuất?', [
-    { text: 'Hủy', style: 'cancel' },
-    { text: 'Đăng xuất', style: 'destructive', onPress: async () => { await logout(); router.replace('/(auth)/login'); } },
-  ]);
+  const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      // Trên Web, Alert.alert không hoạt động, dùng confirm của trình duyệt
+      if (window.confirm('Bạn có chắc muốn đăng xuất?')) {
+        logout();
+      }
+    } else {
+      // Trên Mobile dùng Alert của React Native
+      Alert.alert('Đăng xuất', 'Bạn có chắc muốn đăng xuất?', [
+        { text: 'Hủy', style: 'cancel' },
+        { text: 'Đăng xuất', style: 'destructive', onPress: logout },
+      ]);
+    }
+  };
 
   return (
     <ScrollView style={s.container} showsVerticalScrollIndicator={false}>
       {/* Profile card */}
       <View style={s.profileCard}>
-<<<<<<< HEAD
         <Image 
           source={{ uri: user?.avatar || 'https://via.placeholder.com/150' }} 
           style={s.avatar} 
         />
         <Text style={s.name}>{user?.username}</Text>
         <Text style={s.email}>{user?.email ?? user?.role}</Text>
-=======
-        <Image source={{ uri: user?.avatar }} style={s.avatar} />
-        <Text style={s.name}>{user?.name}</Text>
-        <Text style={s.email}>{user?.email}</Text>
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
         <View style={s.badge}><Text style={s.badgeText}>🎓 Học viên</Text></View>
       </View>
 
       {/* Stats */}
       <View style={s.statsRow}>
         {[
-<<<<<<< HEAD
           { value: 0, label: 'Khóa học' },
           { value: 0, label: 'Bài đã học' },
-=======
-          { value: ENROLLMENTS.length, label: 'Khóa học' },
-          { value: totalCompleted, label: 'Bài đã học' },
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
           { value: '0', label: 'Chứng chỉ' },
         ].map(st => (
           <View key={st.label} style={s.stat}>

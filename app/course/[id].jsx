@@ -1,20 +1,12 @@
-<<<<<<< HEAD
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, Image, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { getCourse } from '../../services/courseService';
 import { getMyEnrollments } from '../../services/enrollmentService';
-=======
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { COURSES, ENROLLMENTS } from '../../constants/mockData';
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
 import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
 
 export default function CourseDetailScreen() {
   const { id } = useLocalSearchParams();
-<<<<<<< HEAD
 
   const [course, setCourse]         = useState(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
@@ -22,10 +14,17 @@ export default function CourseDetailScreen() {
   const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
+    if (!id || id === 'undefined') return;
+
+    setLoading(true);
     Promise.all([getCourse(id), getMyEnrollments()])
       .then(([courseData, enrollments]) => {
         setCourse(courseData);
         setIsEnrolled((enrollments ?? []).some(e => e.courseId === Number(id)));
+      })
+      .catch(err => {
+        console.error("Error fetching course details:", err);
+        Alert.alert("Lỗi", "Không thể tải thông tin khóa học.");
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -36,29 +35,15 @@ export default function CourseDetailScreen() {
     </View>
   );
 
-=======
-  const course = COURSES.find(c => c.id === id);
-  const isEnrolled = ENROLLMENTS.includes(id);
-
-  const [expanded, setExpanded] = useState({});
-
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
   if (!course) return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text>Không tìm thấy khóa học</Text>
     </View>
   );
 
-<<<<<<< HEAD
   const totalLessons = course.chapters
     ? course.chapters.reduce((a, ch) => a + (ch.lessons?.length || 0), 0)
     : 0;
-=======
-  const totalLessons = useMemo(
-    () => course.chapters.reduce((a, ch) => a + ch.lessons.length, 0),
-    [course.chapters]
-  );
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
 
   const toggleExpanded = useCallback((chId) => {
     setExpanded(prev => ({ ...prev, [chId]: !prev[chId] }));

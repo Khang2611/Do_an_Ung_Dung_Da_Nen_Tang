@@ -39,6 +39,9 @@ export const getMyCourses = async () => {
  * @returns {Promise<CourseResponse>}
  */
 export const getCourse = async (id) => {
+  if (!id || id === 'undefined') {
+    throw new Error('Course ID is required');
+  }
   const { data } = await axiosInstance.get(`/courses/${id}`);
   return data.result;
 };

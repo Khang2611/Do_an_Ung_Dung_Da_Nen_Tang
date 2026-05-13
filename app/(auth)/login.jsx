@@ -29,13 +29,8 @@ export default function LoginScreen() {
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
-<<<<<<< HEAD
       username: '',
       password: '',
-=======
-      email: 'an@example.com',
-      password: '123456',
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
     },
   });
 
@@ -45,18 +40,11 @@ export default function LoginScreen() {
   // onSubmit – chỉ được gọi khi TẤT CẢ field hợp lệ
   const onSubmit = useCallback(async (data) => {
     try {
-<<<<<<< HEAD
       await login(data.username, data.password);
       router.replace('/(tabs)');
     } catch (e) {
       const msg = e?.response?.data?.message || 'Tên đăng nhập hoặc mật khẩu không đúng.';
       Alert.alert('Lỗi đăng nhập', msg);
-=======
-      await login(data.email, data.password);
-      router.replace('/(tabs)');
-    } catch (e) {
-      Alert.alert('Lỗi đăng nhập', 'Email hoặc mật khẩu không đúng.');
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
     }
   }, [login]);
 
@@ -79,7 +67,6 @@ export default function LoginScreen() {
         </View>
 
         <View style={s.form}>
-<<<<<<< HEAD
           {/* ── Tên đăng nhập ── required */}
           <Text style={s.label}>Tên đăng nhập</Text>
           <Controller
@@ -94,40 +81,13 @@ export default function LoginScreen() {
                 onChangeText={onChange}
                 autoCapitalize="none"
                 placeholder="Nhập tên đăng nhập"
-=======
-          {/* ── Email ── required + pattern */}
-          <Text style={s.label}>Email</Text>
-          <Controller
-            control={control}
-            name="email"
-            rules={{
-              required: 'Email là bắt buộc',
-              pattern: {
-                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                message: 'Email không đúng định dạng',
-              },
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[s.input, errors.email && s.inputError]}
-                value={value}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                placeholder="email@example.com"
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
                 placeholderTextColor={COLORS.textMuted}
                 returnKeyType="next"
                 onSubmitEditing={() => passwordRef.current?.focus()}
               />
             )}
           />
-<<<<<<< HEAD
           {errors.username && <Text style={s.errorText}>⚠ {errors.username.message}</Text>}
-=======
-          {errors.email && <Text style={s.errorText}>⚠ {errors.email.message}</Text>}
->>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
 
           {/* ── Mật khẩu ── required + minLength */}
           <Text style={s.label}>Mật khẩu</Text>
