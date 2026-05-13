@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -29,6 +30,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
+
+        // ── DEBUG TẠM THỜI: In ra toàn bộ thông tin request để chẩn đoán lỗi 403 ──
+        String path = request.getServletPath();
+        log.info("═══ REQUEST: {} {} (servletPath={}) ═══", request.getMethod(), request.getRequestURI(), path);
+        Collections.list(request.getHeaderNames()).forEach(h ->
+            log.info("  Header: {} = {}", h, request.getHeader(h))
+        );
+        // ── END DEBUG ──
+
+        // Bỏ qua filter cho các endpoint public
+        if (path.startsWith("/api/auth/") || path.startsWith("/api/webhook/")) {
+            log.info("  → Skipping JWT filter (public endpoint)");
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // 1. Lấy token từ header Authorization
         String token = extractTokenFromRequest(request);

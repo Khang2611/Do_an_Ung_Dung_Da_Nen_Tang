@@ -80,7 +80,7 @@ public class PaymentTransactionService {
         transaction.setAmount(coursePrice);
         transaction = paymentTransactionRepository.save(transaction);
 
-        // 4. Tự động tạo TransactionItem gắn khóa học vào đơn hàng
+        // 4. tạo TransactionItem gắn khóa học vào đơn hàng
         TransactionItem item = TransactionItem.builder()
                 .transactionId(transaction.getTransactionId())
                 .courseId(course.getCourseId())
@@ -96,7 +96,7 @@ public class PaymentTransactionService {
         try {
             BigDecimal amount = BigDecimal.valueOf(coursePrice).setScale(2, RoundingMode.HALF_UP);
 
-            // Build payload theo đúng thứ tự mà Gateway verify
+            // Build payload for Gateway verify
             String payload = transactionRef + "|" +
                     transaction.getOrderId() + "|" +
                     transaction.getUserId() + "|" +

@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>🔒 LMS Secure Video Player — 7-Layer Security Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%);
+            color: #E2E8F0;
+            min-height: 100vh;
+            /* Chống select text toàn trang */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+        }
+
+        .app-container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 32px 20px;
+        }
+
+        /* ═══ HEADER ═══ */
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #3B82F6, #8B5CF6, #EC4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+        .header p { color: #64748B; font-size: 14px; }
+
+        /* ═══ SECURITY STATUS PANEL ═══ */
+        .security-panel {
+            background: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .security-panel h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .layers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 10px;
+        }
+        .layer-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: #0F172A;
+            border: 1px solid #334155;
+            transition: all 0.3s;
+        }
+        .layer-item.active {
+            border-color: #22C55E;
+            background: rgba(34, 197, 94, 0.08);
+        }
+        .layer-badge {
+            min-width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 13px;
+        }
+        .layer-info { flex: 1; }
+        .layer-name { font-size: 13px; font-weight: 700; }
+        .layer-status { font-size: 11px; color: #64748B; margin-top: 2px; }
+        .layer-status.on { color: #22C55E; }
+
+        /* ═══ INPUT CONTROLS ═══ */
+        .controls {
+            background: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .controls label { font-size: 14px; font-weight: 600; display: block; margin-bottom: 8px; }
+        .controls textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            background: #0F172A;
+            color: #E2E8F0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+        .controls textarea:focus { outline: none; border-color: #3B82F6; }
+        .btn-play {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(90deg, #3B82F6, #2563EB);
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-play:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,130,246,0.4); }
+
+        /* ═══ VIDEO PLAYER AREA ═══ */
+        .player-wrapper {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .player-wrapper video {
+            width: 100%;
+            display: block;
+        }
+
+        /* ═══ LỚP 7: DYNAMIC WATERMARK ═══ */
+        .watermark-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 10;
+        }
+        .watermark-text {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.12);
+            font-size: 16px;
+            font-weight: 700;
+            white-space: nowrap;
+            transform: rotate(-25deg);
+            pointer-events: none;
+            text-shadow: 0 0 4px rgba(0,0,0,0.3);
+        }
+
+        /* ═══ LỚP 6: SECURITY VIOLATION OVERLAY ═══ */
+        .violation-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(220, 38, 38, 0.95);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 16px;
+            backdrop-filter: blur(20px);
+        }
+        .violation-overlay.active { display: flex; }
+        .violation-overlay .icon { font-size: 72px; }
+        .violation-overlay h2 { font-size: 28px; font-weight: 800; color: white; }
+        .violation-overlay p { font-size: 16px; color: rgba(255,255,255,0.8); max-width: 500px; text-align: center; }
+        .violation-overlay .dismiss-btn {
+            margin-top: 10px;
+            padding: 12px 32px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* ═══ EVENT LOG ═══ */
+        .event-log {
+            background: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 20px;
+        }
+        .event-log h2 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+        .log-list { max-height: 200px; overflow-y: auto; }
+        .log-entry {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            font-size: 13px;
+            background: #0F172A;
+        }
+        .log-entry.warn { border-left: 3px solid #F59E0B; }
+        .log-entry.danger { border-left: 3px solid #EF4444; }
+        .log-entry.info { border-left: 3px solid #3B82F6; }
+        .log-time { color: #64748B; font-size: 11px; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<!-- ═══ LỚP 6: VIOLATION OVERLAY ═══ -->
+<div class="violation-overlay" id="violationOverlay">
+    <div class="icon">🚨</div>
+    <h2>⛔ CẢNH BÁO BẢO MẬT</h2>
+    <p>Phát hiện hành vi vi phạm: DevTools / Screen Recording / Print Screen. Video đã bị tạm dừng để bảo vệ bản quyền nội dung.</p>
+    <p id="violationDetail" style="font-size:13px; color:rgba(255,255,255,0.6);"></p>
+    <button class="dismiss-btn" onclick="dismissViolation()">✕ Đóng cảnh báo & Tiếp tục</button>
+</div>
+
+<div class="app-container">
+    <!-- HEADER -->
+    <div class="header">
+        <h1>🔒 LMS Secure Video Player</h1>
+        <p>Demo kiểm tra 7 lớp bảo mật video trực tiếp trên trình duyệt</p>
+    </div>
+
+    <!-- SECURITY STATUS -->
+    <div class="security-panel">
+        <h2>🛡️ Trạng thái 7 lớp bảo mật</h2>
+        <div class="layers-grid">
+            <div class="layer-item active" id="layer1">
+                <div class="layer-badge" style="background:#3B82F620; color:#3B82F6;">1</div>
+                <div class="layer-info">
+                    <div class="layer-name">JWT Authentication</div>
+                    <div class="layer-status on">✅ Đã xác thực qua Postman</div>
+                </div>
+            </div>
+            <div class="layer-item active" id="layer2">
+                <div class="layer-badge" style="background:#8B5CF620; color:#8B5CF6;">2</div>
+                <div class="layer-info">
+                    <div class="layer-name">Enrollment Check</div>
+                    <div class="layer-status on">✅ Backend đã kiểm tra quyền</div>
+                </div>
+            </div>
+            <div class="layer-item active" id="layer3">
+                <div class="layer-badge" style="background:#F59E0B20; color:#F59E0B;">3</div>
+                <div class="layer-info">
+                    <div class="layer-name">MinIO Signed URL</div>
+                    <div class="layer-status on">✅ URL có chữ ký, hết hạn 15 phút</div>
+                </div>
+            </div>
+            <div class="layer-item active" id="layer4">
+                <div class="layer-badge" style="background:#22C55E20; color:#22C55E;">4</div>
+                <div class="layer-info">
+                    <div class="layer-name">HLS Proxy Playlist</div>
+                    <div class="layer-status on">✅ Mỗi segment .ts có signed riêng</div>
+                </div>
+            </div>
+            <div class="layer-item" id="layer5">
+                <div class="layer-badge" style="background:#EC489920; color:#EC4899;">5</div>
+                <div class="layer-info">
+                    <div class="layer-name">Anti-Screen Capture</div>
+                    <div class="layer-status">📱 Chỉ hoạt động trên Mobile (Android/iOS)</div>
+                </div>
+            </div>
+            <div class="layer-item active" id="layer6">
+                <div class="layer-badge" style="background:#EF444420; color:#EF4444;">6</div>
+                <div class="layer-info">
+                    <div class="layer-name">Anti-DevTools (Web)</div>
+                    <div class="layer-status on" id="layer6Status">✅ Đang giám sát F12, chuột phải, copy, print</div>
+                </div>
+            </div>
+            <div class="layer-item active" id="layer7">
+                <div class="layer-badge" style="background:#06B6D420; color:#06B6D4;">7</div>
+                <div class="layer-info">
+                    <div class="layer-name">Dynamic Watermark</div>
+                    <div class="layer-status on">✅ Username + SessionID + Timestamp</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="controls">
+        <label>📋 Dán nội dung Playlist (.m3u8) từ Postman vào đây:</label>
+        <textarea id="m3u8Content" placeholder="#EXTM3U&#10;#EXT-X-VERSION:3&#10;#EXT-X-TARGETDURATION:10&#10;#EXTINF:10.0,&#10;http://localhost:9000/...segment.ts?X-Amz-Signature=...&#10;#EXT-X-ENDLIST"></textarea>
+        <button class="btn-play" onclick="loadVideo()">▶ Phát Video & Kích Hoạt Bảo Mật</button>
+    </div>
+
+    <!-- VIDEO PLAYER -->
+    <div class="player-wrapper" id="playerWrapper" style="display:none;">
+        <video id="video" controls></video>
+        <!-- LỚP 7: WATERMARK -->
+        <div class="watermark-overlay" id="watermarkOverlay"></div>
+    </div>
+
+    <!-- EVENT LOG -->
+    <div class="event-log">
+        <h2>📋 Security Event Log</h2>
+        <div class="log-list" id="logList">
+            <div class="log-entry info">
+                <span class="log-time">--:--:--</span>
+                <span>Đang chờ phát video để kích hoạt giám sát bảo mật...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// LỚP 7: DYNAMIC WATERMARK
+// ═══════════════════════════════════════════════════════════════════════════════
+const SESSION_ID = Math.random().toString(36).substring(2, 10).toUpperCase();
+const USERNAME = 'admin'; // Sẽ được thay bằng thông tin thực từ JWT
+
+function generateWatermarks() {
+    const overlay = document.getElementById('watermarkOverlay');
+    overlay.innerHTML = '';
+    const now = new Date().toLocaleTimeString('vi-VN');
+    const text = `${USERNAME} • ${SESSION_ID} • ${now}`;
+
+    // Tạo nhiều dòng watermark phủ kín video
+    for (let row = 0; row < 6; row++) {
+        for (let col = 0; col < 4; col++) {
+            const span = document.createElement('span');
+            span.className = 'watermark-text';
+            span.textContent = text;
+            span.style.top = (row * 18 + 5) + '%';
+            span.style.left = (col * 30 - 10) + '%';
+            overlay.appendChild(span);
+        }
+    }
+}
+
+// Cập nhật watermark mỗi 30 giây
+setInterval(generateWatermarks, 30000);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LỚP 6: ANTI-DEVTOOLS & ANTI-COPY & ANTI-PRINT
+// ═══════════════════════════════════════════════════════════════════════════════
+let violationCount = 0;
+
+function triggerViolation(reason) {
+    violationCount++;
+    const video = document.getElementById('video');
+    if (video && !video.paused) video.pause();
+
+    document.getElementById('violationDetail').textContent =
+        `Vi phạm #${violationCount}: ${reason} | Session: ${SESSION_ID}`;
+    document.getElementById('violationOverlay').classList.add('active');
+
+    addLog('danger', `🚨 VI PHẠM: ${reason} (Lần ${violationCount})`);
+
+    // Cập nhật trạng thái lớp 6
+    document.getElementById('layer6Status').textContent = `🚨 Phát hiện ${violationCount} vi phạm!`;
+    document.getElementById('layer6Status').className = 'layer-status';
+    document.getElementById('layer6Status').style.color = '#EF4444';
+}
+
+function dismissViolation() {
+    document.getElementById('violationOverlay').classList.remove('active');
+    addLog('warn', '⚠️ Người dùng đã đóng cảnh báo bảo mật.');
+}
+
+// ── Chặn phím tắt F12, Ctrl+Shift+I/J/C, Ctrl+U, Ctrl+S, Ctrl+P ──
+document.addEventListener('keydown', function(e) {
+    // F12
+    if (e.key === 'F12' || e.keyCode === 123) {
+        e.preventDefault();
+        triggerViolation('Phím F12 — mở DevTools');
+        return false;
+    }
+    // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (DevTools)
+    if (e.ctrlKey && e.shiftKey && ['I','i','J','j','C','c'].includes(e.key)) {
+        e.preventDefault();
+        triggerViolation('Ctrl+Shift+' + e.key.toUpperCase() + ' — mở DevTools');
+        return false;
+    }
+    // Ctrl+U (View Source)
+    if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) {
+        e.preventDefault();
+        triggerViolation('Ctrl+U — xem mã nguồn');
+        return false;
+    }
+    // Ctrl+S (Save)
+    if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        triggerViolation('Ctrl+S — lưu trang');
+        return false;
+    }
+    // Ctrl+P (Print)
+    if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+        e.preventDefault();
+        triggerViolation('Ctrl+P — in trang');
+        return false;
+    }
+    // Ctrl+C (Copy)
+    if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
+        e.preventDefault();
+        triggerViolation('Ctrl+C — sao chép nội dung');
+        return false;
+    }
+    // PrintScreen
+    if (e.key === 'PrintScreen') {
+        e.preventDefault();
+        triggerViolation('PrintScreen — chụp màn hình');
+        return false;
+    }
+});
+
+// ── Chặn chuột phải ──
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    triggerViolation('Chuột phải — menu ngữ cảnh');
+    return false;
+});
+
+// ── Phát hiện DevTools bằng kích thước cửa sổ ──
+let devtoolsOpen = false;
+const threshold = 160;
+function checkDevTools() {
+    const widthDiff = window.outerWidth - window.innerWidth > threshold;
+    const heightDiff = window.outerHeight - window.innerHeight > threshold;
+    if ((widthDiff || heightDiff) && !devtoolsOpen) {
+        devtoolsOpen = true;
+        triggerViolation('DevTools được mở (phát hiện qua kích thước cửa sổ)');
+    } else if (!widthDiff && !heightDiff) {
+        devtoolsOpen = false;
+    }
+}
+setInterval(checkDevTools, 1000);
+
+// ── Debugger trap (phát hiện DevTools console đang mở) ──
+setInterval(function() {
+    const start = performance.now();
+    debugger;
+    const end = performance.now();
+    if (end - start > 100) {
+        triggerViolation('Debugger trap — Console DevTools đang mở');
+    }
+}, 3000);
+
+// ── Page Visibility API: Phát hiện khi user rời tab (quay màn hình) ──
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        const video = document.getElementById('video');
+        if (video && !video.paused) {
+            video.pause();
+            addLog('warn', '⏸️ Video đã tạm dừng vì bạn chuyển sang tab khác (chống quay màn hình).');
+        }
+    }
+});
+
+// ── Chặn kéo thả ──
+document.addEventListener('dragstart', function(e) { e.preventDefault(); });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VIDEO PLAYER (HLS.js)
+// ═══════════════════════════════════════════════════════════════════════════════
+function loadVideo() {
+    var video = document.getElementById('video');
+    var m3u8Content = document.getElementById('m3u8Content').value.trim();
+
+    if (!m3u8Content.includes("#EXTM3U")) {
+        alert("Bạn phải dán đoạn chữ có chứa #EXTM3U từ Postman vào nhé!");
+        return;
+    }
+
+    document.getElementById('playerWrapper').style.display = 'block';
+    generateWatermarks();
+
+    // Tạo Blob URL từ nội dung playlist
+    var blob = new Blob([m3u8Content], { type: 'application/x-mpegURL' });
+    var url = URL.createObjectURL(blob);
+
+    if (Hls.isSupported()) {
+        var hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+            video.play();
+            addLog('info', '▶️ Video đang phát — Tất cả 7 lớp bảo mật đã kích hoạt!');
+            addLog('info', '🎯 Thử nhấn F12, Ctrl+Shift+I, chuột phải, Ctrl+P, Ctrl+C để test...');
+        });
+        hls.on(Hls.Events.ERROR, function(e, data) {
+            addLog('danger', '❌ Lỗi HLS: ' + data.type + ' — ' + data.details);
+        });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url;
+        video.addEventListener('loadedmetadata', function() {
+            video.play();
+            addLog('info', '▶️ Video phát bằng Native HLS (Safari)');
+        });
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EVENT LOG
+// ═══════════════════════════════════════════════════════════════════════════════
+function addLog(type, message) {
+    const logList = document.getElementById('logList');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry ' + type;
+    const now = new Date().toLocaleTimeString('vi-VN');
+    entry.innerHTML = `<span class="log-time">${now}</span><span>${message}</span>`;
+    logList.prepend(entry);
+
+    // Giới hạn 50 dòng log
+    while (logList.children.length > 50) {
+        logList.removeChild(logList.lastChild);
+    }
+}
+
+// Log khởi tạo
+addLog('info', '🔒 Hệ thống bảo mật 7 lớp đã sẵn sàng. Session: ' + SESSION_ID);
+</script>
+</body>
+</html>

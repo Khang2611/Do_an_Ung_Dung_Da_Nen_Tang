@@ -137,10 +137,10 @@ public class VideoService {
             mp4File.transferTo(sourceFile);
             log.info("Đã lưu file MP4 tạm thời tại: {}", sourceFile.getAbsolutePath());
 
-            // 2. Chạy lệnh FFmpeg ở chế độ COPY (Siêu tốc độ - Tự động ghi đè bằng -y)
+            // 2. Chạy lệnh FFmpeg ở chế độ COPY
             String m3u8Name = "playlist.m3u8";
             ProcessBuilder pb = new ProcessBuilder(
-                    "ffmpeg", "-y", // Tự động đồng ý ghi đè, không dừng lại hỏi
+                    "ffmpeg", "-y", // Tự động đồng ý ghi đè
                     "-i", sourceFile.getAbsolutePath(),
                     "-c", "copy",
                     "-hls_time", "10",
@@ -149,8 +149,8 @@ public class VideoService {
                     tempDir + File.separator + m3u8Name
             );
             
-            // QUAN TRỌNG: Phải có dòng này để in log của FFmpeg ra màn hình
-            // Nếu không, bộ đệm (buffer) bị đầy và FFmpeg sẽ bị treo (hang) vĩnh viễn!
+            // in log của FFmpeg ra màn hình
+            // Nếu không, bộ đệm (buffer) bị đầy và FFmpeg sẽ bị treo 
             pb.inheritIO();
             
             log.info("Bắt đầu quá trình FFmpeg...");

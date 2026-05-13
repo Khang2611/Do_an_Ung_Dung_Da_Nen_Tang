@@ -33,7 +33,8 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (userRepository.findByUsername(adminUsername).isEmpty()) {
+        var existingAdmin = userRepository.findByUsername(adminUsername);
+        if (existingAdmin.isEmpty()) {
             User admin = User.builder()
                     .username(adminUsername)
                     .password(passwordEncoder.encode(adminPassword))
@@ -43,10 +44,15 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
 
             userRepository.save(admin);
-            log.info(" Tài khoản ADMIN đã được khởi tạo — username: '{}', email: '{}'",
+            log.info("✅ Tài khoản ADMIN đã được khởi tạo — username: '{}', email: '{}'",
                     adminUsername, adminEmail);
         } else {
-            log.info("ℹ Tài khoản ADMIN '{}' đã tồn tại, bỏ qua khởi tạo.", adminUsername);
+            // Luôn đồng bộ lại mật khẩu từ config để đảm bảo đăng nhập được
+            User admin = existingAdmin.get();
+            admin.setPassword(passwordEncoder.encode(adminPassword));
+            admin.setRole(Role.ADMIN);
+            userRepository.save(admin);
+            log.info("🔄 Tài khoản ADMIN '{}' đã tồn tại — đã đồng bộ lại mật khẩu từ config.", adminUsername);
         }
 
         // Tạo file playlist mẫu trên MinIO để test

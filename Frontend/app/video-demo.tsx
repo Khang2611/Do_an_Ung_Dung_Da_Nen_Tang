@@ -92,7 +92,7 @@ export default function VideoDemoScreen() {
 
         {/* Security Architecture Info */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Kiến trúc bảo mật video</Text>
+          <Text style={styles.infoTitle}>Kiến trúc bảo mật 7 lớp</Text>
           <View style={styles.layersList}>
             <View style={styles.layerItem}>
               <View style={[styles.layerBadge, { backgroundColor: "#3B82F620" }]}>
@@ -135,6 +135,39 @@ export default function VideoDemoScreen() {
                 <Text style={styles.layerTitle}>HLS Proxy Playlist</Text>
                 <Text style={styles.layerDesc}>
                   Mỗi segment .ts có signed URL riêng
+                </Text>
+              </View>
+            </View>
+            <View style={styles.layerItem}>
+              <View style={[styles.layerBadge, { backgroundColor: "#EC489920" }]}>
+                <Text style={[styles.layerNumber, { color: "#EC4899" }]}>5</Text>
+              </View>
+              <View style={styles.layerContent}>
+                <Text style={styles.layerTitle}>Anti-Screen Capture</Text>
+                <Text style={styles.layerDesc}>
+                  FLAG_SECURE (Android) + iOS Recording Detection + Auto Pause
+                </Text>
+              </View>
+            </View>
+            <View style={styles.layerItem}>
+              <View style={[styles.layerBadge, { backgroundColor: "#EF444420" }]}>
+                <Text style={[styles.layerNumber, { color: "#EF4444" }]}>6</Text>
+              </View>
+              <View style={styles.layerContent}>
+                <Text style={styles.layerTitle}>Anti-DevTools (Web)</Text>
+                <Text style={styles.layerDesc}>
+                  F12/DevTools/Print/Copy/PiP blocking + Visibility API
+                </Text>
+              </View>
+            </View>
+            <View style={styles.layerItem}>
+              <View style={[styles.layerBadge, { backgroundColor: "#06B6D420" }]}>
+                <Text style={[styles.layerNumber, { color: "#06B6D4" }]}>7</Text>
+              </View>
+              <View style={styles.layerContent}>
+                <Text style={styles.layerTitle}>Dynamic Watermark</Text>
+                <Text style={styles.layerDesc}>
+                  Username + Session ID + Timestamp để truy vết leak
                 </Text>
               </View>
             </View>
