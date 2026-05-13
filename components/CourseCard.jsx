@@ -6,13 +6,18 @@ export default function CourseCard({ course, style }) {
   const isFree = course.price === 0;
   const categoryName = course.category?.name || 'Chưa phân loại';
 
+  const thumbnail = course.thumbnail || course.courseThumbnail;
+  const imageSource = typeof thumbnail === 'string' 
+    ? { uri: thumbnail } 
+    : (thumbnail || require('../assets/images/course_english_1.jpg'));
+
   return (
     <TouchableOpacity 
       style={[s.card, style]} 
-      onPress={() => router.push(`/course/${course.courseId}`)}
+      onPress={() => router.push(`/course/${course.courseId || course.id}`)}
     >
       <Image 
-        source={{ uri: course.thumbnail || 'https://via.placeholder.com/150' }} 
+        source={imageSource} 
         style={s.thumb} 
       />
       <View style={s.body}>

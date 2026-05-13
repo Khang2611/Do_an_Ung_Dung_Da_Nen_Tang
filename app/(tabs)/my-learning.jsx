@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { getMyEnrollments } from '../../services/enrollmentService';
+import { COURSES, ENROLLMENTS as MOCK_ENROLLMENTS } from '../../constants/mockData';
 import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
 
 export default function MyLearningScreen() {
@@ -10,7 +11,20 @@ export default function MyLearningScreen() {
 
   useEffect(() => {
     getMyEnrollments()
-      .then(data => setEnrollments(data ?? []))
+      .then(data => {
+        if (data && data.length > 0) {
+          setEnrollments(data);
+        } else {
+          // Fallback to mock data
+          const mockData = COURSES.filter(c => MOCK_ENROLLMENTS.includes(c.id));
+          setEnrollments(mockData);
+        }
+      })
+      .catch(err => {
+        console.warn("Sử dụng Mock Data cho danh sách đăng ký.");
+        const mockData = COURSES.filter(c => MOCK_ENROLLMENTS.includes(c.id));
+        setEnrollments(mockData);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -47,17 +61,21 @@ export default function MyLearningScreen() {
       {enrollments.map(course => {
         return (
           <TouchableOpacity 
-            key={course.courseId} 
+            key={course.enrollmentId || course.courseId || course.id} 
             style={s.card} 
-            onPress={() => router.push(`/course/${course.courseId}`)}
+            onPress={() => router.push(`/course/${course.courseId || course.id}`)}
           >
             <Image 
-              source={{ uri: course.thumbnail || 'https://via.placeholder.com/150' }} 
+              source={
+                typeof (course.thumbnail || course.courseThumbnail) === 'string'
+                  ? { uri: course.thumbnail || course.courseThumbnail }
+                  : (course.thumbnail || course.courseThumbnail || require('../../assets/images/course_english_1.jpg'))
+              } 
               style={s.thumb} 
             />
             <View style={s.info}>
-              <Text style={s.courseTitle} numberOfLines={2}>{course.title}</Text>
-              <Text style={s.instructor}>{course.instructor || 'Giảng viên'}</Text>
+              <Text style={s.courseTitle} numberOfLines={2}>{course.courseTitle || course.title}</Text>
+              <Text style={s.instructor}>{course.courseInstructor || course.instructor || 'Giảng viên'}</Text>
               <View style={s.progressRow}>
                 <View style={s.progressBar}>
                   <View style={[s.progressFill, { width: `${course.progress || 0}%` }]} />
@@ -67,7 +85,7 @@ export default function MyLearningScreen() {
               <Text style={s.lessonCount}>
                 {(course.completedLessons || 0)}/{(course.totalLessons || 0)} bài học
               </Text>
-              <TouchableOpacity style={s.continueBtn} onPress={() => router.push(`/course/${course.courseId}`)}>
+              <TouchableOpacity style={s.continueBtn} onPress={() => router.push(`/course/${course.courseId || course.id}`)}>
                 <Text style={s.continueBtnText}>Tiếp tục học →</Text>
               </TouchableOpacity>
             </View>

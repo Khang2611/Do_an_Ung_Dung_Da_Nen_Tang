@@ -34,7 +34,11 @@ export default function ProfileScreen() {
       {/* Profile card */}
       <View style={s.profileCard}>
         <Image 
-          source={{ uri: user?.avatar || 'https://via.placeholder.com/150' }} 
+          source={
+            typeof user?.avatar === 'string'
+              ? { uri: user.avatar }
+              : (user?.avatar || require('../../assets/images/default_avatar.jpg'))
+          } 
           style={s.avatar} 
         />
         <Text style={s.name}>{user?.username}</Text>

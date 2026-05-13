@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, ActivityIn
 import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { getAllCourses, getMyCourses } from '../../services/courseService';
+import { COURSES, IMAGES, ENROLLMENTS as MOCK_ENROLLMENTS } from '../../constants/mockData';
 import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
 import CourseCard from '../../components/CourseCard';
 
@@ -16,8 +17,25 @@ export default function HomeScreen() {
   useEffect(() => {
     Promise.all([getAllCourses(), getMyCourses()])
       .then(([all, mine]) => {
-        setAllCourses(all ?? []);
-        setMyCourses(mine ?? []);
+        // Fallback cho tất cả khóa học
+        if (all && all.length > 0) {
+          setAllCourses(all);
+        } else {
+          setAllCourses(COURSES);
+        }
+
+        // Fallback cho khóa học của tôi
+        if (mine && mine.length > 0) {
+          setMyCourses(mine);
+        } else {
+          const mockMine = COURSES.filter(c => MOCK_ENROLLMENTS.includes(c.id));
+          setMyCourses(mockMine);
+        }
+      })
+      .catch(err => {
+        console.warn("Dùng Mock Data cho Trang Chủ.");
+        setAllCourses(COURSES);
+        setMyCourses(COURSES.filter(c => MOCK_ENROLLMENTS.includes(c.id)));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -47,7 +65,7 @@ export default function HomeScreen() {
       <View style={s.header}>
         <View>
           <Text style={s.greeting}>Xin chào 👋</Text>
-          <Text style={s.userName}>{user?.username}</Text>
+          <Text style={s.userName}>{user?.username || 'Bạn học'}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <TouchableOpacity onPress={handleLogout} style={s.logoutIconBtn}>
@@ -55,7 +73,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
           <TouchableOpacity onPress={goToProfile}>
             <Image 
-              source={{ uri: user?.avatar || 'https://via.placeholder.com/100' }} 
+              source={typeof user?.avatar === 'string' && user.avatar.startsWith('http') ? { uri: user.avatar } : IMAGES.default_avatar} 
               style={s.avatar} 
             />
           </TouchableOpacity>
@@ -77,17 +95,19 @@ export default function HomeScreen() {
           {myCourses.map(course => {
             return (
               <TouchableOpacity
-                key={course.courseId}
+                key={course.courseId || course.id}
                 style={s.resumeCard}
-                onPress={() => router.push(`/course/${course.courseId}`)}
+                onPress={() => router.push(`/course/${course.courseId || course.id}`)}
               >
                 <Image 
-                  source={{ uri: course.thumbnail || 'https://via.placeholder.com/150' }} 
+                  source={typeof (course.thumbnail || course.courseThumbnail) === 'string' && !(course.thumbnail || course.courseThumbnail).includes('placeholder')
+                    ? { uri: course.thumbnail || course.courseThumbnail } 
+                    : (course.thumbnail || course.courseThumbnail || IMAGES.course_english_1)} 
                   style={s.resumeThumb} 
                 />
                 <View style={s.resumeInfo}>
-                  <Text style={s.resumeTitle} numberOfLines={2}>{course.title}</Text>
-                  <Text style={s.resumeInstructor}>{course.instructor || 'Giảng viên'}</Text>
+                  <Text style={s.resumeTitle} numberOfLines={2}>{course.courseTitle || course.title}</Text>
+                  <Text style={s.resumeInstructor}>{course.courseInstructor || course.instructor || 'Giảng viên'}</Text>
                   <View style={s.progressBar}>
                     <View style={[s.progressFill, { width: `${course.progress || 0}%` }]} />
                   </View>
@@ -102,7 +122,7 @@ export default function HomeScreen() {
       {/* Khóa học nổi bật */}
       <Section title="Khóa học nổi bật" onMore={goToExplore}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 24 }}>
-          {featured.map(c => <CourseCard key={c.courseId} course={c} style={{ width: 240 }} />)}
+          {featured.map(c => <CourseCard key={c.courseId || c.id} course={c} style={{ width: 240 }} />)}
         </ScrollView>
       </Section>
 

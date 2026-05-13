@@ -1,8 +1,16 @@
+export const IMAGES = {
+  course_english_1: require('../assets/images/course_english_1.jpg'),
+  course_ielts: require('../assets/images/course_ielts.jpg'),
+  course_vocab: require('../assets/images/course_vocab.jpg'),
+  course_grammar: require('../assets/images/course_grammar.jpg'),
+  default_avatar: require('../assets/images/default_avatar.jpg'),
+};
+
 export const MOCK_USER = {
   id: 'u1',
   name: 'Nguyễn Văn An',
   email: 'an@example.com',
-  avatar: 'https://i.pravatar.cc/150?img=3',
+  avatar: IMAGES.default_avatar,
   role: 'STUDENT',
 };
 
@@ -16,7 +24,7 @@ export const CATEGORIES = [
 
 export const COURSES = [
   {
-    id: 'k1',
+    id: 1,
     title: 'Tiếng Anh Giao Tiếp Căn Bản',
     instructor: 'GV. Sarah Smith',
     category: 'Giao tiếp',
@@ -25,7 +33,7 @@ export const COURSES = [
     rating: 4.8,
     students: 1240,
     duration: '24h 30m',
-    thumbnail: 'https://picsum.photos/seed/eng1/400/220',
+    thumbnail: IMAGES.course_english_1,
     description: 'Khóa học tiếng Anh giao tiếp toàn diện cho người mới bắt đầu. Tự tin giao tiếp trong các tình huống thực tế hằng ngày.',
     chapters: [
       {
@@ -51,7 +59,7 @@ export const COURSES = [
     ],
   },
   {
-    id: 'k2',
+    id: 2,
     title: 'Luyện thi IELTS 6.5+ Tốc Tốc',
     instructor: 'Thầy David',
     category: 'IELTS',
@@ -60,7 +68,7 @@ export const COURSES = [
     rating: 4.7,
     students: 890,
     duration: '48h 00m',
-    thumbnail: 'https://picsum.photos/seed/ielts/400/220',
+    thumbnail: IMAGES.course_ielts,
     description: 'Bứt phá điểm IELTS của bạn với các chiến thuật làm bài hiệu quả từ cựu giám khảo IELTS. Tập trung vào Speaking và Writing.',
     chapters: [
       {
@@ -79,7 +87,7 @@ export const COURSES = [
     ],
   },
   {
-    id: 'k3',
+    id: 3,
     title: '1000 Từ Vựng Tiếng Anh Thông Dụng',
     instructor: 'Cô Mai Anh',
     category: 'Từ vựng',
@@ -88,7 +96,7 @@ export const COURSES = [
     rating: 4.5,
     students: 3200,
     duration: '12h 00m',
-    thumbnail: 'https://picsum.photos/seed/vocab/400/220',
+    thumbnail: IMAGES.course_vocab,
     description: 'Khóa học miễn phí giúp bạn ghi nhớ 1000 từ vựng cốt lõi nhất để đọc hiểu 80% văn bản tiếng Anh thông thường.',
     chapters: [
       {
@@ -100,7 +108,7 @@ export const COURSES = [
     ],
   },
   {
-    id: 'k4',
+    id: 4,
     title: 'Ngữ Pháp Tiếng Anh Nâng Cao',
     instructor: 'ThS. John Doe',
     category: 'Ngữ pháp',
@@ -109,7 +117,7 @@ export const COURSES = [
     rating: 4.9,
     students: 2100,
     duration: '30h 00m',
-    thumbnail: 'https://picsum.photos/seed/grammar/400/220',
+    thumbnail: IMAGES.course_grammar,
     description: 'Nắm vững các cấu trúc ngữ pháp phức tạp: câu điều kiện hỗn hợp, đảo ngữ, mệnh đề quan hệ rút gọn.',
     chapters: [
       {
@@ -122,9 +130,9 @@ export const COURSES = [
   },
 ];
 
-export const ENROLLMENTS = ['k1', 'k2']; // id các khóa đã đăng ký
+export const ENROLLMENTS = [1, 2]; // id các khóa đã đăng ký
 
 export const PROGRESS = {
-  k1: { completed: 2, total: 8, percent: 25 },
-  k2: { completed: 2, total: 5, percent: 40 },
+  1: { completed: 2, total: 8, percent: 25 },
+  2: { completed: 2, total: 5, percent: 40 },
 };

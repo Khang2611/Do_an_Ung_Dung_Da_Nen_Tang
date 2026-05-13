@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Image, StyleSheet, TouchableOpacity, Alert, Act
 import { useLocalSearchParams, router } from 'expo-router';
 import { getCourse } from '../../services/courseService';
 import { getMyEnrollments } from '../../services/enrollmentService';
+import { COURSES } from '../../constants/mockData';
 import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
 
 export default function CourseDetailScreen() {
@@ -23,11 +24,47 @@ export default function CourseDetailScreen() {
         setIsEnrolled((enrollments ?? []).some(e => e.courseId === Number(id)));
       })
       .catch(err => {
-        console.error("Error fetching course details:", err);
-        Alert.alert("Lỗi", "Không thể tải thông tin khóa học.");
+        console.warn("Dữ liệu API chưa sẵn sàng cho ID: " + id + ". Sử dụng Mock Data.");
+        // Tìm kiếm trong Mock Data dựa trên ID
+        const fallbackCourse = COURSES.find(c => c.id == id || c.id === String(id));
+        if (fallbackCourse) {
+          setCourse(fallbackCourse);
+          // Giả lập trạng thái đã đăng ký từ mockData
+          const { ENROLLMENTS } = require('../../constants/mockData');
+          setIsEnrolled(ENROLLMENTS.includes(Number(id)) || ENROLLMENTS.includes(String(id)));
+        } else {
+          console.error("Error fetching course details:", err);
+          Alert.alert("Lỗi", "Không tìm thấy thông tin khóa học.");
+        }
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  const toggleExpanded = useCallback((chId) => {
+    setExpanded(prev => ({ ...prev, [chId]: !prev[chId] }));
+  }, []);
+
+  const handleEnroll = useCallback(() => {
+    if (isEnrolled && course?.chapters?.[0]?.lessons?.[0]) {
+      return router.push(`/lesson/${course.chapters[0].lessons[0].id}`);
+    }
+    Alert.alert(
+      'Đăng ký khóa học',
+      `Đăng ký "${course?.title}" với giá ${course?.price === 0 ? 'Miễn phí' : course?.price?.toLocaleString('vi-VN') + 'đ'}?`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        { text: 'Đăng ký', onPress: () => Alert.alert('✅ Thành công', 'Bạn đã đăng ký thành công! (Demo)') },
+      ]
+    );
+  }, [isEnrolled, course]);
+
+  const handleLessonPress = useCallback((lesson) => {
+    if (lesson.isFree || isEnrolled) {
+      router.push(`/lesson/${lesson.id}`);
+    } else {
+      Alert.alert('🔒 Bài học trả phí', 'Vui lòng đăng ký khóa học để truy cập.');
+    }
+  }, [isEnrolled]);
 
   if (loading) return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -45,49 +82,44 @@ export default function CourseDetailScreen() {
     ? course.chapters.reduce((a, ch) => a + (ch.lessons?.length || 0), 0)
     : 0;
 
-  const toggleExpanded = useCallback((chId) => {
-    setExpanded(prev => ({ ...prev, [chId]: !prev[chId] }));
-  }, []);
-
-  const handleEnroll = useCallback(() => {
-    if (isEnrolled) return router.push(`/lesson/${course.chapters[0].lessons[0].id}`);
-    Alert.alert(
-      'Đăng ký khóa học',
-      `Đăng ký "${course.title}" với giá ${course.price === 0 ? 'Miễn phí' : course.price.toLocaleString('vi-VN') + 'đ'}?`,
-      [
-        { text: 'Hủy', style: 'cancel' },
-        { text: 'Đăng ký', onPress: () => Alert.alert('✅ Thành công', 'Bạn đã đăng ký thành công! (Demo)') },
-      ]
-    );
-  }, [isEnrolled, course]);
-
-  const handleLessonPress = useCallback((lesson) => {
-    if (lesson.isFree || isEnrolled) {
-      router.push(`/lesson/${lesson.id}`);
-    } else {
-      Alert.alert('🔒 Bài học trả phí', 'Vui lòng đăng ký khóa học để truy cập.');
+  // Hàm xử lý ảnh an toàn
+  const getSafeImage = (img) => {
+    if (!img) return require('../../assets/images/course_english_1.jpg');
+    if (typeof img === 'string') {
+      if (img.includes('placeholder') || img.startsWith('http')) {
+         // Nếu là placeholder hoặc link ngoài, ưu tiên dùng ảnh cục bộ tương ứng hoặc mặc định
+         if (course.id == 1) return require('../../assets/images/course_english_1.jpg');
+         if (course.id == 2) return require('../../assets/images/course_ielts.jpg');
+         if (course.id == 3) return require('../../assets/images/course_vocab.jpg');
+         return require('../../assets/images/course_english_1.jpg');
+      }
+      return { uri: img };
     }
-  }, [isEnrolled]);
+    return img;
+  };
 
   return (
     <View style={s.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Image source={{ uri: course.thumbnail }} style={s.thumbnail} />
+        <Image 
+          source={getSafeImage(course.thumbnail || course.courseThumbnail)} 
+          style={s.thumbnail} 
+        />
         <View style={s.body}>
           {/* Tags */}
           <View style={s.tagRow}>
-            <View style={s.catTag}><Text style={s.catTagText}>{course.category}</Text></View>
-            <View style={s.levelTag}><Text style={s.levelTagText}>{course.level}</Text></View>
+            <View style={s.catTag}><Text style={s.catTagText}>{course.category?.name || 'Khóa học'}</Text></View>
+            <View style={s.levelTag}><Text style={s.levelTagText}>{course.level || 'Cơ bản'}</Text></View>
           </View>
           <Text style={s.title}>{course.title}</Text>
-          <Text style={s.instructor}>👨‍🏫 {course.instructor}</Text>
+          <Text style={s.instructor}>👨‍🏫 {course.instructor || 'Giảng viên hệ thống'}</Text>
 
           {/* Stats */}
           <View style={s.statsRow}>
-            <Stat icon="⭐" value={`${course.rating}`} label="Đánh giá" />
-            <Stat icon="👥" value={course.students.toLocaleString()} label="Học viên" />
-            <Stat icon="🕐" value={course.duration} label="Thời lượng" />
-            <Stat icon="📖" value={`${totalLessons}`} label="Bài học" />
+            <Stat icon="⭐" value={`${course.rating || 5.0}`} label="Đánh giá" />
+            <Stat icon="👥" value={(course.students || 0).toLocaleString()} label="Học viên" />
+            <Stat icon="🕐" value={course.duration || '12h 30m'} label="Thời lượng" />
+            <Stat icon="📖" value={`${totalLessons || 0}`} label="Bài học" />
           </View>
 
           {/* Description */}
@@ -96,9 +128,9 @@ export default function CourseDetailScreen() {
 
           {/* Curriculum */}
           <Text style={s.sectionTitle}>Nội dung khóa học</Text>
-          <Text style={s.curriculumMeta}>{course.chapters.length} chương · {totalLessons} bài học</Text>
+          <Text style={s.curriculumMeta}>{(course.chapters?.length || 0)} chương · {totalLessons} bài học</Text>
 
-          {course.chapters.map(ch => (
+          {(course.chapters || []).map(ch => (
             <ChapterRow
               key={ch.id}
               chapter={ch}
