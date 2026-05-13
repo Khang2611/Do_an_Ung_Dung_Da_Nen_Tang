@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -39,18 +40,34 @@ public class PaymentGatewayService {
     private String secretKey;
 
     /**
-     * Tạo PaymentOrder mới từ thông tin nhận được từ KhoaHoc.
+     * Tìm đơn hàng hiện có (PENDING/FAILED) hoặc tạo mới.
+     * Tránh tạo duplicate khi user retry.
      */
     @Transactional
-    public PaymentOrder createOrder(Long khoahocTransactionId, Long userId,
-                                    Double amount, String courseNames, String ref) {
+    public PaymentOrder findOrCreateOrder(Long khoahocTransactionId, Long userId,
+                                          Double amount, String courseNames, String ref) {
+        // Tìm đơn hàng đã tồn tại có thể tái sử dụng
+        List<PaymentOrder> existing = paymentOrderRepository.findByKhoahocTransactionId(khoahocTransactionId);
+        Optional<PaymentOrder> reusable = existing.stream()
+                .filter(o -> "PENDING".equals(o.getStatus()) || "FAILED".equals(o.getStatus()))
+                .findFirst();
+
+        if (reusable.isPresent()) {
+            PaymentOrder order = reusable.get();
+            order.setStatus("PENDING");
+            order.setPaymentMethod(null); // Reset để user chọn lại
+            log.info("Tái sử dụng đơn hàng gwOrderId={} cho khoahocTxId={}", order.getGwOrderId(), khoahocTransactionId);
+            return paymentOrderRepository.save(order);
+        }
+
+        // Tạo mới nếu không có đơn nào tái sử dụng được
         PaymentOrder order = PaymentOrder.builder()
                 .khoahocTransactionId(khoahocTransactionId)
                 .userId(userId)
                 .amount(amount)
                 .courseNames(courseNames)
                 .status("PENDING")
-                .gatewayRef(ref) // Lưu trực tiếp mã TXN của LMS
+                .gatewayRef(ref)
                 .build();
         return paymentOrderRepository.save(order);
     }
@@ -63,11 +80,11 @@ public class PaymentGatewayService {
         PaymentOrder order = paymentOrderRepository.findById(gwOrderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + gwOrderId));
 
-        if (!"PENDING".equals(order.getStatus())) {
+        // Cho phép retry từ PENDING hoặc FAILED
+        if (!"PENDING".equals(order.getStatus()) && !"FAILED".equals(order.getStatus())) {
             throw new RuntimeException("Đơn hàng đã được xử lý, trạng thái hiện tại: " + order.getStatus());
         }
 
-        // Không tạo gatewayRef ngẫu nhiên nữa, dùng chung ref của LMS
         order.setPaymentMethod(paymentMethod);
         order.setStatus("PROCESSING");
         return paymentOrderRepository.save(order);
@@ -81,6 +98,12 @@ public class PaymentGatewayService {
     public PaymentOrder finalizePayment(Long gwOrderId, boolean success) {
         PaymentOrder order = paymentOrderRepository.findById(gwOrderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + gwOrderId));
+
+        // Chống finalize lại đơn đã hoàn tất → tránh gửi webhook 2 lần (double-spend)
+        if ("SUCCESS".equals(order.getStatus()) || "CANCELLED".equals(order.getStatus())) {
+            log.warn("Đơn hàng {} đã ở trạng thái {}. Bỏ qua finalize.", gwOrderId, order.getStatus());
+            return order;
+        }
 
         String finalStatus = success ? "SUCCESS" : "FAILED";
         order.setStatus(finalStatus);
@@ -99,6 +122,12 @@ public class PaymentGatewayService {
     public PaymentOrder cancelOrder(Long gwOrderId) {
         PaymentOrder order = paymentOrderRepository.findById(gwOrderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + gwOrderId));
+
+        // Chống cancel lại đơn đã hoàn tất
+        if ("SUCCESS".equals(order.getStatus()) || "CANCELLED".equals(order.getStatus())) {
+            log.warn("Đơn hàng {} đã ở trạng thái {}. Bỏ qua cancel.", gwOrderId, order.getStatus());
+            return order;
+        }
 
         order.setStatus("CANCELLED");
         order = paymentOrderRepository.save(order);

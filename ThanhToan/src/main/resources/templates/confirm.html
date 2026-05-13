@@ -84,7 +84,7 @@
             </div>
 
             <div style="text-align:center; margin-top:10px;">
-                <a th:href="@{/pay(transactionId=${order.khoahocTransactionId}, userId=${order.userId}, amount=${order.amount}, courseNames=${order.courseNames}, returnUrl=${returnUrl})}"
+                <a th:href="@{/pay(transactionId=${order.khoahocTransactionId}, userId=${order.userId}, amount=${order.amount}, courseNames=${order.courseNames}, returnUrl=${returnUrl}, ref=${order.gatewayRef})}"
                    class="btn btn-ghost">← Quay lại</a>
             </div>
         </div>

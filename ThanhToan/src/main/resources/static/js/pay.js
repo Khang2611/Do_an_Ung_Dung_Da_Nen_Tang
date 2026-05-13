@@ -8,11 +8,14 @@ document.querySelectorAll('.method-card input[type="radio"]').forEach(radio => {
     });
 });
 
-// Validate trước khi submit
-document.querySelector('form').addEventListener('submit', function(e) {
-    const selected = document.querySelector('.method-card input:checked');
-    if (!selected) {
-        e.preventDefault();
-        alert('Vui lòng chọn phương thức thanh toán!');
-    }
-});
+// Validate trước khi submit (dùng ID cụ thể, tránh bắt nhầm form cancel)
+var paymentForm = document.getElementById('payment-form');
+if (paymentForm) {
+    paymentForm.addEventListener('submit', function(e) {
+        var selected = document.querySelector('.method-card input:checked');
+        if (!selected) {
+            e.preventDefault();
+            alert('Vui lòng chọn phương thức thanh toán!');
+        }
+    });
+}

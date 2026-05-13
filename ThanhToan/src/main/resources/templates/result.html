@@ -105,7 +105,7 @@
                     ← Quay lại KhoaHoc
                 </a>
                 <a th:if="${order.status != 'SUCCESS'}"
-                   th:href="@{/pay(transactionId=${order.khoahocTransactionId}, userId=${order.userId}, amount=${order.amount}, courseNames=${order.courseNames != null ? order.courseNames : ''}, returnUrl=${returnUrl})}"
+                   th:href="@{/pay(transactionId=${order.khoahocTransactionId}, userId=${order.userId}, amount=${order.amount}, courseNames=${order.courseNames != null ? order.courseNames : ''}, returnUrl=${returnUrl}, ref=${order.gatewayRef})}"
                    class="btn btn-outline">
                     🔄 Thử lại
                 </a>

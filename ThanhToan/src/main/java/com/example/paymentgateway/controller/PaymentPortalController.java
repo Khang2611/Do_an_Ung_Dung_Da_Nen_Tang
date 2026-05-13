@@ -41,8 +41,8 @@ public class PaymentPortalController {
 
         log.info("Nhận yêu cầu thanh toán: transactionId={}, userId={}, amount={}, ref={}", transactionId, userId, amount, ref);
 
-        // Tạo đơn hàng trong Gateway DB, dùng ref của LMS làm gatewayRef
-        PaymentOrder order = paymentGatewayService.createOrder(transactionId, userId, amount, courseNames, ref);
+        // Tìm đơn hàng hiện có hoặc tạo mới (tránh duplicate khi retry)
+        PaymentOrder order = paymentGatewayService.findOrCreateOrder(transactionId, userId, amount, courseNames, ref);
 
         model.addAttribute("order", order);
         model.addAttribute("returnUrl", returnUrl != null ? returnUrl : "http://localhost:8080");

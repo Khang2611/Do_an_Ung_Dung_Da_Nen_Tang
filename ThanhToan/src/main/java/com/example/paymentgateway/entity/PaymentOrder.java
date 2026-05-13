@@ -17,7 +17,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Table(name = "gw_payment_order")
+@Table(name = "gw_payment_order", indexes = {
+        @Index(name = "idx_khoahoc_tx_id", columnList = "khoahoc_transaction_id")
+})
 public class PaymentOrder {
 
     @Id
