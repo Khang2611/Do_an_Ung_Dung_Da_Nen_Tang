@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /**
  * hooks/useAuth.js  ← THAY THẾ file gốc dùng mock data
  *
@@ -15,10 +16,15 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { login as loginApi, register as registerApi } from '../services/authService';
+=======
+import { createContext, useContext, useState, useCallback } from 'react';
+import { MOCK_USER } from '../constants/mockData';
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+<<<<<<< HEAD
   const [user, setUser]       = useState(null);
   const [token, setToken]     = useState(null);
   const [loading, setLoading] = useState(true); // đang khôi phục session
@@ -89,6 +95,21 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+=======
+  const [user, setUser] = useState(null);
+
+  const login = useCallback(async (email, password) => {
+    setUser(MOCK_USER);
+    return true;
+  }, []);
+
+  const logout = useCallback(async () => {
+    setUser(null);
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout }}>
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
       {children}
     </AuthContext.Provider>
   );

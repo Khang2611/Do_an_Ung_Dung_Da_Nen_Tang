@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
@@ -19,19 +20,37 @@ export default function MyLearningScreen() {
       <ActivityIndicator size="large" color={COLORS.primary} />
     </View>
   );
+=======
+import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
+import { COURSES, ENROLLMENTS, PROGRESS } from '../../constants/mockData';
+import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
+
+export default function MyLearningScreen() {
+  const enrolled = COURSES.filter(c => ENROLLMENTS.includes(c.id));
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
 
   return (
     <ScrollView style={s.container} showsVerticalScrollIndicator={false}>
       <View style={s.header}>
         <Text style={s.title}>Khóa học của tôi</Text>
+<<<<<<< HEAD
         <Text style={s.sub}>{enrollments.length} khóa học đang học</Text>
+=======
+        <Text style={s.sub}>{enrolled.length} khóa học đang học</Text>
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
       </View>
 
       {/* Stats */}
       <View style={s.statsRow}>
         {[
+<<<<<<< HEAD
           { label: 'Đang học', value: enrollments.length, icon: '📚' },
           { label: 'Bài đã học', value: 0, icon: '✅' },
+=======
+          { label: 'Đang học', value: enrolled.length, icon: '📚' },
+          { label: 'Bài đã học', value: Object.values(PROGRESS).reduce((a, p) => a + p.completed, 0), icon: '✅' },
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
           { label: 'Hoàn thành', value: '0', icon: '🏆' },
         ].map(stat => (
           <View key={stat.label} style={s.statCard}>
@@ -44,6 +63,7 @@ export default function MyLearningScreen() {
 
       {/* Course list */}
       <Text style={s.sectionTitle}>Đang học</Text>
+<<<<<<< HEAD
       {enrollments.map(course => {
         return (
           <TouchableOpacity 
@@ -68,6 +88,24 @@ export default function MyLearningScreen() {
                 {(course.completedLessons || 0)}/{(course.totalLessons || 0)} bài học
               </Text>
               <TouchableOpacity style={s.continueBtn} onPress={() => router.push(`/course/${course.courseId}`)}>
+=======
+      {enrolled.map(course => {
+        const prog = PROGRESS[course.id];
+        return (
+          <TouchableOpacity key={course.id} style={s.card} onPress={() => router.push(`/course/${course.id}`)}>
+            <Image source={{ uri: course.thumbnail }} style={s.thumb} />
+            <View style={s.info}>
+              <Text style={s.courseTitle} numberOfLines={2}>{course.title}</Text>
+              <Text style={s.instructor}>{course.instructor}</Text>
+              <View style={s.progressRow}>
+                <View style={s.progressBar}>
+                  <View style={[s.progressFill, { width: `${prog?.percent || 0}%` }]} />
+                </View>
+                <Text style={s.progressPct}>{prog?.percent || 0}%</Text>
+              </View>
+              <Text style={s.lessonCount}>{prog?.completed}/{prog?.total} bài học</Text>
+              <TouchableOpacity style={s.continueBtn} onPress={() => router.push(`/course/${course.id}`)}>
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
                 <Text style={s.continueBtnText}>Tiếp tục học →</Text>
               </TouchableOpacity>
             </View>
@@ -75,7 +113,11 @@ export default function MyLearningScreen() {
         );
       })}
 
+<<<<<<< HEAD
       {enrollments.length === 0 && (
+=======
+      {enrolled.length === 0 && (
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
         <View style={s.emptyState}>
           <Text style={s.emptyIcon}>📭</Text>
           <Text style={s.emptyTitle}>Chưa có khóa học nào</Text>

@@ -12,7 +12,10 @@
     "@expo/metro-runtime": "~6.1.2",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
+<<<<<<< HEAD
     "axios": "^1.16.0",
+=======
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
     "expo-font": "~14.0.11",

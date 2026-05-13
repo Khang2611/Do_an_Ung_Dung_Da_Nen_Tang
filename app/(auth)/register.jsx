@@ -17,12 +17,30 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
+<<<<<<< HEAD
 import { useAuth } from '../../hooks/useAuth';
 
 
 
 export default function RegisterScreen() {
   const { register } = useAuth();
+=======
+
+// ─────────────────────────────────────────────────────────────
+// Hàm giả lập gọi API đăng ký (Mục 5 – tutorial)
+// Sau này thay bằng fetch/axios thật mà không cần đổi logic form
+// ─────────────────────────────────────────────────────────────
+const fakeRegisterApi = async (data) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      console.log('Fake API register data:', data);
+      resolve();
+    }, 1000);
+  });
+};
+
+export default function RegisterScreen() {
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
   // ─────────────────────────────────────────────────────────────
   // 7.1 Khởi tạo useForm (Mục 7.1 – tutorial)
   //   control      – truyền vào Controller cho từng field
@@ -39,7 +57,10 @@ export default function RegisterScreen() {
     watch,
   } = useForm({
     defaultValues: {
+<<<<<<< HEAD
       username: '',
+=======
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
       fullName: '',
       email: '',
       password: '',
@@ -50,8 +71,12 @@ export default function RegisterScreen() {
   // 7.4 watch('password') – lấy giá trị password real-time để validate confirmPassword
   const passwordValue = watch('password');
 
+<<<<<<< HEAD
   // 2.4 useRef – focus chain giữa các ô nhập
   const usernameRef = useRef(null);
+=======
+  // 2.4 useRef – focus chain giữa các ô nhập (từ tutorial React Native hooks)
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
   const emailRef    = useRef(null);
   const passwordRef = useRef(null);
   const confirmRef  = useRef(null);
@@ -62,6 +87,7 @@ export default function RegisterScreen() {
   // ─────────────────────────────────────────────────────────────
   const onSubmit = useCallback(async (data) => {
     try {
+<<<<<<< HEAD
       await register({
         username: data.username,
         password: data.password,
@@ -77,6 +103,17 @@ export default function RegisterScreen() {
       Alert.alert('Lỗi', msg);
     }
   }, [register, reset]);
+=======
+      await fakeRegisterApi(data);
+      Alert.alert('✅ Thành công', 'Đăng ký tài khoản thành công!', [
+        { text: 'Đăng nhập', onPress: () => router.replace('/(auth)/login') },
+      ]);
+      reset();
+    } catch (error) {
+      Alert.alert('Lỗi', 'Có lỗi xảy ra, vui lòng thử lại sau.');
+    }
+  }, [reset]);
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
 
   // 7.5 onSubmitError – được gọi khi có field lỗi (Mục 7.5)
   const onSubmitError = useCallback(() => {
@@ -92,6 +129,7 @@ export default function RegisterScreen() {
         <Text style={s.title}>Tạo tài khoản</Text>
         <Text style={s.subtitle}>Bắt đầu hành trình học tập của bạn</Text>
 
+<<<<<<< HEAD
         {/* ── Tên đăng nhập ── */}
         <Text style={s.label}>Tên đăng nhập *</Text>
         <Controller
@@ -124,6 +162,9 @@ export default function RegisterScreen() {
         {errors.username && <Text style={s.errorText}>⚠ {errors.username.message}</Text>}
 
         {/* ── Họ và tên ── */}
+=======
+        {/* ── Họ và tên ── (Mục 7.2 – required + minLength) */}
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
         <Text style={s.label}>Họ và tên *</Text>
         <Controller
           control={control}
@@ -185,10 +226,14 @@ export default function RegisterScreen() {
           name="password"
           rules={{
             required: 'Mật khẩu là bắt buộc',
+<<<<<<< HEAD
             pattern: {
               value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
               message: 'Mật khẩu phải có ≥8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt (@$!%*?&)',
             },
+=======
+            minLength: { value: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự' },
+>>>>>>> 1c62f9ab4cd0007a81634b40f72be2a8c7cd11b5
           }}
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
