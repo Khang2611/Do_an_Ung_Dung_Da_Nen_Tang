@@ -1,6 +1,10 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Platform, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
+import { getLesson } from '../../services/lessonService';
+import { getChapter } from '../../services/chapterService';
+import { getCourse } from '../../services/courseService';
+import { getHlsStreamConfig } from '../../services/videoService';
 import { COURSES } from '../../constants/mockData';
 import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
 
@@ -11,27 +15,143 @@ const TABS = ['Nội dung', 'Tài liệu', 'Thảo luận'];
 export default function LessonScreen() {
   const { id } = useLocalSearchParams();
   const [activeTab, setActiveTab] = useState('Nội dung');
+  const [loading, setLoading] = useState(true);
   const scrollRef = useRef(null);
+  const videoRef = useRef(null);
 
-  let lesson, course, chapter, lessonIndex, chapterLessons;
-  for (const c of COURSES) {
-    for (const ch of c.chapters) {
-      const idx = ch.lessons.findIndex(l => l.id === id);
-      if (idx !== -1) {
-        lesson = ch.lessons[idx];
-        course = c;
-        chapter = ch;
-        lessonIndex = idx;
-        chapterLessons = ch.lessons;
-        break;
-      }
+  // States cho bài giảng tải từ API
+  const [lesson, setLesson] = useState(null);
+  const [chapter, setChapter] = useState(null);
+  const [course, setCourse] = useState(null);
+  const [chapterLessons, setChapterLessons] = useState([]);
+  const [lessonIndex, setLessonIndex] = useState(-1);
+
+  // States cho Video Streaming
+  const [streamConfig, setStreamConfig] = useState(null);
+  const [hlsLoaded, setHlsLoaded] = useState(false);
+
+  // 1. Tự động tải thư viện hls.js trên Web để stream video m3u8 bảo mật từ MinIO
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (window.Hls) {
+      setHlsLoaded(true);
+      return;
     }
-    if (lesson) break;
-  }
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+    script.async = true;
+    script.onload = () => setHlsLoaded(true);
+    document.body.appendChild(script);
+  }, []);
+
+  // 2. Tải thông tin chi tiết bài giảng từ API hoặc Mock Data
+  useEffect(() => {
+    if (!id || id === 'undefined') return;
+
+    const fetchLessonDetails = async () => {
+      setLoading(true);
+      try {
+        // Tải chi tiết bài học từ API
+        const lessonData = await getLesson(id);
+        setLesson(lessonData);
+
+        // Tải thông tin chương chứa bài học
+        const chapterData = await getChapter(lessonData.chapterId);
+        setChapter(chapterData);
+
+        // Tải toàn bộ syllabus của khóa học để quản lý danh sách bài học và nút chuyển bài
+        const courseData = await getCourse(chapterData.courseId);
+        setCourse(courseData);
+
+        // Tìm chương tương ứng trong course syllabus để lấy danh sách bài học đúng thứ tự
+        const targetChapter = (courseData.chapters || []).find(ch => ch.chapterId === chapterData.chapterId);
+        const lessonsList = targetChapter ? targetChapter.lessons : [];
+        setChapterLessons(lessonsList);
+
+        const index = lessonsList.findIndex(l => l.lessonId === lessonData.lessonId);
+        setLessonIndex(index);
+
+        // Tải cấu hình stream HLS của bài học từ MinIO
+        if (lessonData.videoUrl) {
+          const cfg = await getHlsStreamConfig(id);
+          setStreamConfig(cfg);
+        } else {
+          setStreamConfig(null);
+        }
+      } catch (err) {
+        console.warn("API bài học chưa sẵn sàng. Sử dụng Mock Data cho ID: " + id);
+        // Fallback sang Mock Data
+        let foundLesson, foundCourse, foundChapter, foundIndex, foundLessons;
+        for (const c of COURSES) {
+          for (const ch of c.chapters) {
+            const idx = ch.lessons.findIndex(l => l.id === id);
+            if (idx !== -1) {
+              foundLesson = ch.lessons[idx];
+              foundCourse = c;
+              foundChapter = ch;
+              foundIndex = idx;
+              foundLessons = ch.lessons;
+              break;
+            }
+          }
+          if (foundLesson) break;
+        }
+
+        if (foundLesson) {
+          setLesson(foundLesson);
+          setChapter(foundChapter);
+          setCourse(foundCourse);
+          setChapterLessons(foundLessons);
+          setLessonIndex(foundIndex);
+          setStreamConfig(null);
+        } else {
+          Alert.alert("Lỗi", "Không tìm thấy bài học.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLessonDetails();
+  }, [id]);
+
+  // 3. Khởi tạo đầu phát video HLS khi cấu hình stream hoặc hls.js đã sẵn sàng
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !videoRef.current || !streamConfig) return;
+    const video = videoRef.current;
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Hỗ trợ HLS gốc trên Safari và trình duyệt di động
+      video.src = streamConfig.uri;
+    } else if (window.Hls) {
+      // Chrome/Firefox dùng hls.js kèm Authorization Header để lấy các mảnh .ts bảo mật từ MinIO
+      const hls = new window.Hls({
+        xhrSetup: (xhr) => {
+          if (streamConfig.headers) {
+            Object.keys(streamConfig.headers).forEach(key => {
+              xhr.setRequestHeader(key, streamConfig.headers[key]);
+            });
+          }
+        }
+      });
+      hls.loadSource(streamConfig.uri);
+      hls.attachMedia(video);
+
+      return () => {
+        hls.destroy();
+      };
+    }
+  }, [streamConfig, hlsLoaded]);
+
+  if (loading) return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg }}>
+      <ActivityIndicator size="large" color={COLORS.primary} />
+    </View>
+  );
 
   if (!lesson) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Bài học không tồn tại</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg }}>
+      <Text style={{ fontSize: 16, color: COLORS.textSecondary }}>Bài học không tồn tại</Text>
     </View>
   );
 
@@ -41,13 +161,13 @@ export default function LessonScreen() {
   const goToPrev = useCallback(() => {
     if (!prevLesson) return;
     scrollRef.current?.scrollTo({ y: 0, animated: false });
-    router.replace(`/lesson/${prevLesson.id}`);
+    router.replace(`/lesson/${prevLesson.lessonId || prevLesson.id}`);
   }, [prevLesson]);
 
   const goToNext = useCallback(() => {
     if (!nextLesson) return;
     scrollRef.current?.scrollTo({ y: 0, animated: false });
-    router.replace(`/lesson/${nextLesson.id}`);
+    router.replace(`/lesson/${nextLesson.lessonId || nextLesson.id}`);
   }, [nextLesson]);
 
   const handleTabChange = useCallback((tab) => {
@@ -56,21 +176,33 @@ export default function LessonScreen() {
 
   return (
     <View style={s.container}>
-      {/* Video player mock */}
-      <View style={s.videoPlayer}>
-        <View style={s.videoInner}>
-          <Text style={s.playIcon}>▶</Text>
-          <Text style={s.videoLabel}>Video: {lesson.title}</Text>
-          <Text style={s.videoDur}>{lesson.duration}</Text>
+      {/* Video Player */}
+      {Platform.OS === 'web' && streamConfig ? (
+        <View style={s.videoPlayer}>
+          <video
+            ref={videoRef}
+            controls
+            style={{ width: '100%', height: '100%', borderRadius: RADIUS.md }}
+            poster="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60"
+          />
         </View>
-        <View style={s.videoProgress}>
-          <View style={s.videoProgressFill} />
+      ) : (
+        // Giao diện video giả lập nếu chưa có file stream
+        <View style={s.videoPlayer}>
+          <View style={s.videoInner}>
+            <Text style={s.playIcon}>▶</Text>
+            <Text style={s.videoLabel}>Video: {lesson.title}</Text>
+            <Text style={s.videoDur}>{lesson.duration ? (typeof lesson.duration === 'number' ? `${Math.floor(lesson.duration / 60)}m` : lesson.duration) : 'Đang tải'}</Text>
+          </View>
+          <View style={s.videoProgress}>
+            <View style={s.videoProgressFill} />
+          </View>
         </View>
-      </View>
+      )}
 
       <ScrollView ref={scrollRef} style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         <View style={s.body}>
-          <Text style={s.chapterName}>{chapter.title}</Text>
+          <Text style={s.chapterName}>{chapter?.title || 'Chương học'}</Text>
           <Text style={s.title}>{lesson.title}</Text>
 
           <View style={s.tabRow}>
@@ -122,13 +254,9 @@ function TabContent({ activeTab, lesson }) {
   if (activeTab === 'Nội dung') {
     return (
       <View style={s.contentBox}>
-        <Text style={s.contentTitle}>📝 Ghi chú bài học</Text>
+        <Text style={s.contentTitle}>📝 Tóm tắt & Hướng dẫn bài học</Text>
         <Text style={s.contentText}>
-          Trong bài học này, bạn sẽ tìm hiểu về "{lesson.title}". Đây là nội dung demo — trong
-          phiên bản thực tế, nội dung sẽ được tải từ backend thông qua MinIO pre-signed URL.{'\n\n'}
-          • Nắm vững các khái niệm cơ bản{'\n'}
-          • Thực hành với ví dụ thực tế{'\n'}
-          • Bài tập cuối bài để củng cố kiến thức
+          {lesson.content || `Chào mừng bạn đến với bài học "${lesson.title}". Hãy xem kỹ video bài giảng bên trên, ghi chép lại các mẫu câu giao tiếp và thực hành phát âm theo giáo viên để đạt hiệu quả cao nhất.`}
         </Text>
       </View>
     );
@@ -139,9 +267,9 @@ function TabContent({ activeTab, lesson }) {
       <View style={s.contentBox}>
         <Text style={s.contentTitle}>📎 Tài liệu đính kèm</Text>
         <Text style={s.contentText}>
-          {'• Slide bài giảng (PDF)\n'}
-          {'• Bài tập thực hành\n'}
-          {'• Từ vựng trọng tâm'}
+          {'• Slide bài giảng chi tiết (PDF)\n'}
+          {'• File nghe Mp3 chất lượng cao\n'}
+          {'• Bài tập thực hành tự luận & đáp án'}
         </Text>
       </View>
     );
@@ -149,9 +277,9 @@ function TabContent({ activeTab, lesson }) {
 
   return (
     <View style={s.contentBox}>
-      <Text style={s.contentTitle}>💬 Thảo luận</Text>
+      <Text style={s.contentTitle}>💬 Thảo luận lớp học</Text>
       <Text style={s.contentText}>
-        Chưa có bình luận nào. Hãy là người đầu tiên đặt câu hỏi về bài học này!
+        Chưa có bình luận nào trong bài học này. Hãy để lại thắc mắc của bạn bên dưới để thầy cô hỗ trợ giải đáp nhé!
       </Text>
     </View>
   );

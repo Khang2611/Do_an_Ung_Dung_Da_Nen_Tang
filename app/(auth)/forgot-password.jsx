@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
+import { forgotPassword, resetPassword } from '../../services/authService';
 
 export default function ForgotPasswordScreen() {
   const [step, setStep] = useState(1); // 1: Nhập email, 2: Nhập mã xác nhận + mật khẩu mới
@@ -32,23 +33,25 @@ export default function ForgotPasswordScreen() {
     if (!isValid) return;
 
     try {
-      // Giả lập API gửi mã về email
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      Alert.alert('Thành công', 'Mã xác nhận đã được gửi đến email của bạn.');
+      // Gọi API thực tế gửi mã xác nhận
+      await forgotPassword(data.email);
+      Alert.alert('Thành công', 'Mã xác nhận đã được gửi đến email của bạn. Vui lòng kiểm tra log Server để xem mã OTP!');
       setStep(2);
     } catch (e) {
-      Alert.alert('Lỗi', 'Không thể gửi mã xác nhận. Vui lòng thử lại.');
+      const msg = e?.response?.data?.message || 'Không thể gửi mã xác nhận. Vui lòng kiểm tra xem email có tồn tại không.';
+      Alert.alert('Lỗi', msg);
     }
   }, [trigger]);
 
   const handleResetPassword = useCallback(async (data) => {
     try {
-      // Giả lập API đổi mật khẩu
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Gọi API đổi mật khẩu thực tế
+      await resetPassword(data.email, data.code, data.newPassword);
       Alert.alert('Thành công', 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.');
       router.replace('/(auth)/login');
     } catch (e) {
-      Alert.alert('Lỗi', 'Mã xác nhận không đúng hoặc đã hết hạn.');
+      const msg = e?.response?.data?.message || 'Mã xác nhận không đúng hoặc đã hết hạn.';
+      Alert.alert('Lỗi', msg);
     }
   }, []);
 

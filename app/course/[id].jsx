@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, Image, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { getCourse } from '../../services/courseService';
-import { getMyEnrollments } from '../../services/enrollmentService';
+import { getMyEnrollments, createEnrollment } from '../../services/enrollmentService';
 import { COURSES } from '../../constants/mockData';
 import { COLORS, RADIUS, SHADOW } from '../../constants/theme';
 
@@ -46,21 +46,41 @@ export default function CourseDetailScreen() {
 
   const handleEnroll = useCallback(() => {
     if (isEnrolled && course?.chapters?.[0]?.lessons?.[0]) {
-      return router.push(`/lesson/${course.chapters[0].lessons[0].id}`);
+      const targetId = course.chapters[0].lessons[0].lessonId || course.chapters[0].lessons[0].id;
+      return router.push(`/lesson/${targetId}`);
     }
     Alert.alert(
       'Đăng ký khóa học',
       `Đăng ký "${course?.title}" với giá ${course?.price === 0 ? 'Miễn phí' : course?.price?.toLocaleString('vi-VN') + 'đ'}?`,
       [
         { text: 'Hủy', style: 'cancel' },
-        { text: 'Đăng ký', onPress: () => Alert.alert('✅ Thành công', 'Bạn đã đăng ký thành công! (Demo)') },
+        { 
+          text: 'Đăng ký', 
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const payload = {
+                courseId: course.courseId || course.id
+              };
+              await createEnrollment(payload);
+              Alert.alert('✅ Thành công', 'Bạn đã đăng ký khóa học thành công!');
+              setIsEnrolled(true);
+            } catch (err) {
+              console.error("Error enrolling in course:", err);
+              Alert.alert('Lỗi', err.response?.data?.message || 'Không thể đăng ký khóa học lúc này.');
+            } finally {
+              setLoading(false);
+            }
+          }
+        },
       ]
     );
   }, [isEnrolled, course]);
 
   const handleLessonPress = useCallback((lesson) => {
     if (lesson.isFree || isEnrolled) {
-      router.push(`/lesson/${lesson.id}`);
+      const targetId = lesson.lessonId || lesson.id;
+      router.push(`/lesson/${targetId}`);
     } else {
       Alert.alert('🔒 Bài học trả phí', 'Vui lòng đăng ký khóa học để truy cập.');
     }
@@ -132,9 +152,9 @@ export default function CourseDetailScreen() {
 
           {(course.chapters || []).map(ch => (
             <ChapterRow
-              key={ch.id}
+              key={ch.chapterId || ch.id}
               chapter={ch}
-              isExpanded={!!expanded[ch.id]}
+              isExpanded={!!expanded[ch.chapterId || ch.id]}
               onToggle={toggleExpanded}
               onLessonPress={handleLessonPress}
               isEnrolled={isEnrolled}
@@ -161,20 +181,20 @@ export default function CourseDetailScreen() {
 const ChapterRow = React.memo(function ChapterRow({ chapter, isExpanded, onToggle, onLessonPress, isEnrolled }) {
   return (
     <View style={s.chapter}>
-      <TouchableOpacity style={s.chapterHeader} onPress={() => onToggle(chapter.id)}>
+      <TouchableOpacity style={s.chapterHeader} onPress={() => onToggle(chapter.chapterId || chapter.id)}>
         <Text style={s.chapterTitle}>{chapter.title}</Text>
-        <Text style={s.chapterMeta}>{chapter.lessons.length} bài · {isExpanded ? '▲' : '▼'}</Text>
+        <Text style={s.chapterMeta}>{(chapter.lessons || []).length} bài · {isExpanded ? '▲' : '▼'}</Text>
       </TouchableOpacity>
-      {isExpanded && chapter.lessons.map(lesson => (
+      {isExpanded && (chapter.lessons || []).map(lesson => (
         <TouchableOpacity
-          key={lesson.id}
+          key={lesson.lessonId || lesson.id}
           style={s.lessonRow}
           onPress={() => onLessonPress(lesson)}
         >
-          <Text style={s.lessonIcon}>{lesson.isCompleted ? '✅' : lesson.isFree ? '▶️' : '🔒'}</Text>
+          <Text style={s.lessonIcon}>{lesson.isCompleted ? '✅' : (lesson.isFree || isEnrolled) ? '▶️' : '🔒'}</Text>
           <View style={{ flex: 1 }}>
             <Text style={s.lessonTitle}>{lesson.title}</Text>
-            <Text style={s.lessonDur}>{lesson.duration}</Text>
+            <Text style={s.lessonDur}>{lesson.duration ? (typeof lesson.duration === 'number' ? `${Math.floor(lesson.duration / 60)}m` : lesson.duration) : ''}</Text>
           </View>
           {lesson.isFree && <View style={s.freeTag}><Text style={s.freeTagText}>Miễn phí</Text></View>}
         </TouchableOpacity>

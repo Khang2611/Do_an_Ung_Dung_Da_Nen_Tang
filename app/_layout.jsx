@@ -11,6 +11,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="course/[id]" options={{ headerShown: true, title: 'Chi tiết khóa học', headerTintColor: '#7C3AED' }} />
         <Stack.Screen name="lesson/[id]" options={{ headerShown: true, title: 'Bài học', headerTintColor: '#7C3AED' }} />
+        <Stack.Screen name="change-password" options={{ headerShown: false }} />
       </Stack>
     </AuthProvider>
   );

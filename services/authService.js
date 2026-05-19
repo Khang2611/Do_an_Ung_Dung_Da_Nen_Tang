@@ -39,3 +39,23 @@ export const register = async (payload) => {
 export const logout = async () => {
   await axiosInstance.post('/auth/logout');
 };
+
+/**
+ * Yêu cầu mã xác minh quên mật khẩu
+ * @param {string} email
+ */
+export const forgotPassword = async (email) => {
+  const { data } = await axiosInstance.post('/auth/forgot-password', { email });
+  return data;
+};
+
+/**
+ * Đặt lại mật khẩu mới bằng OTP
+ * @param {string} email
+ * @param {string} code
+ * @param {string} newPassword
+ */
+export const resetPassword = async (email, code, newPassword) => {
+  const { data } = await axiosInstance.post('/auth/reset-password', { email, code, newPassword });
+  return data;
+};

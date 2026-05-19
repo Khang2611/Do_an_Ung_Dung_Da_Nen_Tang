@@ -10,7 +10,7 @@ export default function ProfileScreen() {
     { icon: '📚', label: 'Khóa học của tôi', onPress: () => router.push('/(tabs)/my-learning') },
     { icon: '🏆', label: 'Chứng chỉ', onPress: () => {} },
     { icon: '🔔', label: 'Thông báo', onPress: () => {} },
-    { icon: '🔒', label: 'Đổi mật khẩu', onPress: () => {} },
+    { icon: '🔒', label: 'Đổi mật khẩu', onPress: () => router.push('/change-password') },
     { icon: '❓', label: 'Trợ giúp & Hỗ trợ', onPress: () => {} },
   ];
 
