@@ -15,7 +15,7 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
         <Link to="/" className="flex items-center gap-2 font-bold text-slate-950">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-indigo-600 text-white"><BookOpen size={20} /></span>
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-600 text-white"><BookOpen size={20} /></span>
           EduFlow
         </Link>
         <nav className="hidden items-center gap-5 text-sm font-medium text-slate-600 md:flex">

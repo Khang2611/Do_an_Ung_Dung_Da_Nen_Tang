@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getCourseById, updateCourse } from "../../api/courseApi";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
 import { Loading } from "../../components/common/Loading";
+import { PageHeader } from "../../components/common/PageHeader";
 import { CourseForm } from "../../components/course/CourseForm";
 import type { Course } from "../../types/course";
 
@@ -21,7 +22,7 @@ export function EditCourse() {
 
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold text-slate-950">Sửa khóa học</h1>
+      <PageHeader title="Sửa khóa học" description="Cập nhật thông tin khóa học, chương, bài học và trạng thái xuất bản." />
       <CourseForm
         initialValue={course}
         submitLabel="Cập nhật"
