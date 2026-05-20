@@ -65,7 +65,7 @@
             </div>
 
             <!-- Payment Method Selection -->
-            <form th:action="@{/pay/confirm}" method="post">
+            <form id="payment-form" th:action="@{/pay/confirm}" method="post">
                 <input type="hidden" name="gwOrderId" th:value="${order.gwOrderId}">
                 <input type="hidden" name="returnUrl" th:value="${returnUrl}">
 

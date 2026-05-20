@@ -10,7 +10,10 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
@@ -197,10 +200,21 @@ public class PaymentGatewayService {
                     .bodyValue(payload)
                     .retrieve()
                     .bodyToMono(String.class)
+                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(5))
+                            .maxBackoff(Duration.ofSeconds(60))
+                            .filter(throwable -> {
+                                if (throwable instanceof WebClientResponseException) {
+                                    WebClientResponseException ex = (WebClientResponseException) throwable;
+                                    return ex.getStatusCode().is5xxServerError();
+                                }
+                                // Retry for connection errors, timeouts, etc.
+                                return true;
+                            })
+                    )
                     .subscribe(
                             response -> log.info("Webhook gửi về KhoaHoc thành công. Ref={}, Status={}, Response={}",
                                     transactionRef, status, response),
-                            error -> log.error("LỖI gọi webhook về KhoaHoc. Ref={}, Error={}",
+                            error -> log.error("LỖI gọi webhook về KhoaHoc sau nhiều lần retry. Ref={}, Error={}",
                                     transactionRef, error.getMessage())
                     );
         } catch (Exception e) {

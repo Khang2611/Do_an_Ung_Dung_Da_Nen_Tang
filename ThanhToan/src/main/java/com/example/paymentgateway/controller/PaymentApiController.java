@@ -28,10 +28,10 @@ public class PaymentApiController {
 
     private final PaymentGatewayService paymentGatewayService;
 
-    @Value("${gateway.api-key:LMS_API_KEY}")
+    @Value("${gateway.merchant.api-key:LMS_API_KEY}")
     private String gatewayApiKey;
 
-    @Value("${gateway.secret-key:SHARED_HMAC_SECRET_2024}")
+    @Value("${gateway.hmac.secret-key:SHARED_HMAC_SECRET_2024}")
     private String gatewaySecretKey;
 
     /** Lấy toàn bộ đơn hàng */
@@ -117,8 +117,9 @@ public class PaymentApiController {
         String timestamp = request.get("timestamp").toString();
         String nonce = request.get("nonce").toString();
 
-        // Format số tiền để khớp chuẩn (2 chữ số thập phân)
-        String amountFormatted = String.format(java.util.Locale.US, "%.2f", amountRaw);
+        // Format số tiền để khớp chuẩn (2 chữ số thập phân) dùng BigDecimal
+        java.math.BigDecimal amountBd = java.math.BigDecimal.valueOf(amountRaw);
+        String amountFormatted = amountBd.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
 
         // 3. Tái tạo lại chuỗi Payload giống hệt cấu trúc bên LMS
         // LMS payload: ref|orderId|userId|amount|returnUrl|ipnUrl|timestamp|nonce
