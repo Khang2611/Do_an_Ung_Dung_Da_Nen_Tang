@@ -9,9 +9,21 @@
  * Yêu cầu JWT + user phải đã đăng ký khóa học chứa bài học đó.
  */
 
-import axiosInstance from '../axiosInstance';
-import { BASE_URL } from '../axiosInstance';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import axiosInstance from "../axiosInstance";
+import { BASE_URL } from "../axiosInstance";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const isHlsVideo = (videoUrl) => {
+  return (
+    typeof videoUrl === "string" && videoUrl.toLowerCase().endsWith(".m3u8")
+  );
+};
+
+const isMp4Video = (videoUrl) => {
+  return (
+    typeof videoUrl === "string" && videoUrl.toLowerCase().endsWith(".mp4")
+  );
+};
 
 /**
  * Lấy Signed URL cho video (xem trực tiếp, hết hạn sau 1h)
@@ -25,23 +37,39 @@ export const getSignedUrl = async (lessonId) => {
 };
 
 /**
- * Xây dựng URL của HLS playlist proxy.
- * URL này được truyền thẳng vào hls.js hoặc react-native-video;
- * token JWT được gắn vào header bởi axiosInstance nên dùng riêng hàm này.
+ * Xây dựng cấu hình video dựa theo loại video trong backend.
+ * - HLS (.m3u8) sử dụng route `/api/videos/stream/:lessonId/playlist.m3u8`
+ * - MP4 sử dụng route `/api/videos/signed-url/:lessonId`
  *
- * Ví dụ dùng với react-native-video:
- *   const { uri, headers } = await getHlsStreamConfig(lessonId);
- *   <Video source={{ uri, headers }} />
- *
- * @param {number} lessonId
- * @returns {Promise<{ uri: string, headers: { Authorization: string } }>}
+ * @param {number|string} lessonId
+ * @param {string} videoUrl
+ * @returns {Promise<{ uri: string, headers: Record<string, string>, isHls: boolean }>}
  */
-export const getHlsStreamConfig = async (lessonId) => {
-  const token = await AsyncStorage.getItem('token');
+export const getVideoSource = async (lessonId, videoUrl) => {
+  if (isHlsVideo(videoUrl)) {
+    const token = await AsyncStorage.getItem("token");
+    return {
+      uri: `${BASE_URL}/videos/stream/${lessonId}/playlist.m3u8`,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      isHls: true,
+    };
+  }
+
+  if (isMp4Video(videoUrl)) {
+    const uri = await getSignedUrl(lessonId);
+    return {
+      uri,
+      headers: {},
+      isHls: false,
+    };
+  }
+
+  // Fallback nếu backend trả kiểu video khác hoặc chưa xác định
   return {
-    uri: `${BASE_URL}/videos/stream/${lessonId}/playlist.m3u8`,
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    uri: await getSignedUrl(lessonId),
+    headers: {},
+    isHls: false,
   };
 };
+
+export { isHlsVideo };

@@ -1,65 +1,73 @@
-/**
- * axiosInstance.js
- *
- * Cấu hình Axios trung tâm cho toàn bộ ứng dụng.
- * - Tự động đính kèm JWT token vào mọi request (request interceptor)
- * - Tự động xử lý lỗi 401 → logout (response interceptor)
- *
- * Cách dùng: import axiosInstance from '../axiosInstance';
- */
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+const extra = Constants.expoConfig?.extra || Constants.manifest?.extra || {};
 
-// ─── Thay bằng IP máy tính chạy backend khi test trên thiết bị thật ───────────
-// Emulator Android : http://10.0.2.2:8080/api
-// iOS Simulator / Web : http://localhost:8080/api
-// Thiết bị thật   : http://<IP-LAN-của-bạn>:8080/api
-export const BASE_URL = Platform.OS === 'android' 
-  ? 'http://10.0.2.2:8080/api' 
-  : 'http://localhost:8080/api';
+const parseHostFromUri = (uri) => {
+  if (!uri || typeof uri !== "string") return null;
+  const cleaned = uri.replace(/^https?:\/\//, "").replace(/^exp:\/\//, "");
+  const host = cleaned.split(":")[0];
+  return host === "" ? null : host;
+};
 
+const getCurrentMobileHost = () => {
+  const hostUri =
+    extra.API_BASE_URL ||
+    Constants.expoConfig?.hostUri ||
+    Constants.manifest?.hostUri ||
+    Constants.manifest?.debuggerHost;
+
+  if (typeof hostUri === "string") {
+    const host = parseHostFromUri(hostUri);
+    if (host) return `http://${host}:8080/api`;
+  }
+
+  return "http://192.168.44.100:8080/api";
+};
+
+const LOCAL_MOBILE_API = getCurrentMobileHost();
+const WEB_API = extra.WEB_API_URL || "http://localhost:8080/api";
+
+export const BASE_URL = Platform.OS === "web" ? WEB_API : LOCAL_MOBILE_API;
+
+// ✅ Tạo instance trước khi dùng
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
-  timeout: 15000,
+  timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
-// ─── Request Interceptor: gắn token JWT vào header Authorization ──────────────
+// ─── Request Interceptor ──────────────────────────────────────────────────────
 axiosInstance.interceptors.request.use(
   async (config) => {
-    const token = await AsyncStorage.getItem('token');
-    // Kiểm tra kỹ tránh trường hợp token là chuỗi "null" hoặc "undefined"
-    if (token && token !== 'null' && token !== 'undefined') {
+    const token = await AsyncStorage.getItem("token");
+    if (token && token !== "null" && token !== "undefined") {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
-// ─── Response Interceptor: bắt 401 → xóa token, điều hướng về login ──────────
-// Lưu ý: điều hướng thực tế cần gọi router từ bên ngoài (xem useAuth.js)
+// ─── Response Interceptor ─────────────────────────────────────────────────────
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401 || error.response?.status === 403) {
-      console.warn("Phiên làm việc hết hạn hoặc không có quyền. Đang xóa token...");
-      
-      // Xóa sạch dữ liệu trong AsyncStorage
-      await AsyncStorage.multiRemove(['token', 'user']);
-      
-      // Điều hướng (Web)
-      if (Platform.OS === 'web') {
-        window.location.href = '/(auth)/login';
+      console.warn(
+        "Phiên làm việc hết hạn hoặc không có quyền. Đang xóa token...",
+      );
+      await AsyncStorage.multiRemove(["token", "user"]);
+      if (Platform.OS === "web") {
+        window.location.href = "/(auth)/login";
       }
-      // Note: Trên mobile, việc đổi user thành null sẽ kích hoạt chuyển màn hình ở index.jsx
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;

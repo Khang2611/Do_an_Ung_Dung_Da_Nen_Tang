@@ -24,9 +24,10 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "plugins": [
-      "expo-router",
-      "expo-font"
-    ]
+    "plugins": ["expo-router", "expo-font", "expo-video"],
+    "extra": {
+      "API_BASE_URL": "http://192.168.44.105:8080/api",
+      "WEB_API_URL": "http://localhost:8080/api"
+    }
   }
 }

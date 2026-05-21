@@ -43,7 +43,13 @@ export default function LoginScreen() {
       await login(data.username, data.password);
       router.replace('/(tabs)');
     } catch (e) {
-      const msg = e?.response?.data?.message || 'Tên đăng nhập hoặc mật khẩu không đúng.';
+      console.log('Login error details:', e);
+      let msg = 'Tên đăng nhập hoặc mật khẩu không đúng.';
+      if (!e.response) {
+        msg = 'Không thể kết nối tới máy chủ (Network Error). Vui lòng đảm bảo:\n1. Điện thoại và máy tính kết nối CÙNG MỘT MẠNG WI-FI.\n2. Đã mở chặn tường lửa Windows cho Java.\n3. Server Backend đang chạy.';
+      } else if (e.response.data?.message) {
+        msg = e.response.data.message;
+      }
       Alert.alert('Lỗi đăng nhập', msg);
     }
   }, [login]);
