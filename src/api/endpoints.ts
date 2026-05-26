@@ -1,0 +1,14 @@
+export const AUTH_LOGIN = "/api/auth/login";
+export const AUTH_REGISTER = "/api/auth/register";
+export const AUTH_ME = "/api/auth/me";
+export const COURSES = "/api/courses";
+export const COURSE_MY = "/api/courses/myCourse";
+export const CATEGORIES = "/api/categories";
+export const CHAPTERS = "/api/chapters";
+export const LESSONS = "/api/lessons";
+export const USERS = "/api/users";
+export const ENROLLMENTS = "/api/enrollments";
+export const ENROLLMENTS_ME = "/api/enrollments/me";
+export const LEARNING_PROGRESS = "/api/learning-progresses";
+export const PAYMENT_TRANSACTIONS = "/api/payment-transactions";
+export const VIDEOS = "/api/videos";
