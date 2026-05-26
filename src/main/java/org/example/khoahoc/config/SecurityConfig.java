@@ -41,6 +41,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
                 // Webhook từ Gateway — xác thực bằng API/Secret key (không cần JWT)
                 .requestMatchers(HttpMethod.POST, "/api/webhook/payment").permitAll()
                 .anyRequest().authenticated()

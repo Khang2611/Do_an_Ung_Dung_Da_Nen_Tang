@@ -17,7 +17,12 @@ public class JwtProperties {
     private String secret;
 
     /**
-     * Thời gian hết hạn token tính bằng millisecond — đọc từ jwt.expiration.ms
+     * Thời gian hết hạn access token tính bằng millisecond — đọc từ jwt.expiration.ms
      */
-    private long expirationMs = 86400000;
+    private long expirationMs = 86400000; // 24 hours
+
+    /**
+     * Thời gian hết hạn refresh token tính bằng millisecond — đọc từ jwt.refresh.expiration.ms
+     */
+    private long refreshExpirationMs = 604800000; // 7 days (604800000 ms)
 }
