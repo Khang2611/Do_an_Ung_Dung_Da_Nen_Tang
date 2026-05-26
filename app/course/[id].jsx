@@ -9,6 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   SafeAreaView,
+  Linking,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { getCourse } from "../../services/courseService";
@@ -16,6 +18,7 @@ import {
   getMyEnrollments,
   createEnrollment,
 } from "../../services/enrollmentService";
+import { createPaymentTransaction } from "../../services/paymentService";
 import { COURSES } from "../../constants/mockData";
 import { COLORS, RADIUS, SHADOW } from "../../constants/theme";
 
@@ -66,46 +69,86 @@ export default function CourseDetailScreen() {
     setExpanded((prev) => ({ ...prev, [chId]: !prev[chId] }));
   }, []);
 
-  const handleEnroll = useCallback(() => {
+  const handleEnroll = useCallback(async () => {
     if (isEnrolled && course?.chapters?.[0]?.lessons?.[0]) {
       const targetId =
         course.chapters[0].lessons[0].lessonId ||
         course.chapters[0].lessons[0].id;
       return router.push(`/lesson/${targetId}`);
     }
-    Alert.alert(
-      "Đăng ký khóa học",
-      `Đăng ký "${course?.title}" với giá ${course?.price === 0 ? "Miễn phí" : course?.price?.toLocaleString("vi-VN") + "đ"}?`,
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Đăng ký",
-          onPress: async () => {
-            try {
-              setLoading(true);
-              const payload = {
-                courseId: course.courseId || course.id,
-              };
-              await createEnrollment(payload);
-              Alert.alert(
-                "✅ Thành công",
-                "Bạn đã đăng ký khóa học thành công!",
-              );
-              setIsEnrolled(true);
-            } catch (err) {
-              console.error("Error enrolling in course:", err);
-              Alert.alert(
-                "Lỗi",
-                err.response?.data?.message ||
-                  "Không thể đăng ký khóa học lúc này.",
-              );
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ],
-    );
+
+    const priceLabel =
+      course?.price === 0
+        ? "Miễn phí"
+        : course?.price?.toLocaleString("vi-VN") + "đ";
+
+    // Dùng confirm trực tiếp trên web để tránh vấn đề với Alert.alert
+    const isWeb = Platform.OS === "web";
+    const confirmed = isWeb
+      ? window.confirm(`Đăng ký "${course?.title}" với giá ${priceLabel}?`)
+      : await new Promise((resolve) =>
+          Alert.alert(
+            "Đăng ký khóa học",
+            `Đăng ký "${course?.title}" với giá ${priceLabel}?`,
+            [
+              { text: "Hủy", onPress: () => resolve(false), style: "cancel" },
+              { text: "Đăng ký", onPress: () => resolve(true) },
+            ],
+          ),
+        );
+
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      if (course.price === 0) {
+        const payload = {
+          courseId: course.courseId || course.id,
+        };
+        await createEnrollment(payload);
+        if (isWeb) {
+          window.alert("✅ Bạn đã đăng ký khóa học thành công!");
+        } else {
+          Alert.alert("✅ Thành công", "Bạn đã đăng ký khóa học thành công!");
+        }
+        setIsEnrolled(true);
+      } else {
+        const payload = {
+          courseId: course.courseId || course.id,
+          orderId: course.courseId || course.id,
+        };
+        console.log("Đang tạo giao dịch thanh toán...", payload);
+        const res = await createPaymentTransaction(payload);
+        console.log("Kết quả từ backend:", res);
+        if (res && res.gatewayUrl) {
+          console.log("Chuyển hướng tới:", res.gatewayUrl);
+          if (isWeb) {
+            // Dùng window.location.href thay vì Linking.openURL để tránh popup blocker
+            window.location.href = res.gatewayUrl;
+          } else {
+            Linking.openURL(res.gatewayUrl);
+          }
+        } else {
+          const msg = "Không lấy được đường dẫn thanh toán. Vui lòng thử lại.";
+          if (isWeb) {
+            window.alert("Lỗi: " + msg);
+          } else {
+            Alert.alert("Lỗi", msg);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error enrolling in course:", err);
+      const msg =
+        err.response?.data?.message || "Không thể đăng ký khóa học lúc này.";
+      if (isWeb) {
+        window.alert("Lỗi: " + msg);
+      } else {
+        Alert.alert("Lỗi", msg);
+      }
+    } finally {
+      setLoading(false);
+    }
   }, [isEnrolled, course]);
 
   const handleLessonPress = useCallback(
