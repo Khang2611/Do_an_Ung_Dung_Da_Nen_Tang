@@ -12,6 +12,7 @@
 import axiosInstance from "../axiosInstance";
 import { BASE_URL } from "../axiosInstance";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 const isHlsVideo = (videoUrl) => {
   return (
@@ -48,6 +49,14 @@ export const getSignedUrl = async (lessonId) => {
 export const getVideoSource = async (lessonId, videoUrl) => {
   if (isHlsVideo(videoUrl)) {
     const token = await AsyncStorage.getItem("token");
+
+    if (Platform.OS === "web") {
+      return {
+        uri: `${BASE_URL}/videos/stream/${lessonId}/playlist.m3u8${token ? `?token=${token}` : ""}`,
+        headers: {},
+        isHls: true,
+      };
+    }
     return {
       uri: `${BASE_URL}/videos/stream/${lessonId}/playlist.m3u8`,
       headers: token ? { Authorization: `Bearer ${token}` } : {},

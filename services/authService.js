@@ -19,6 +19,7 @@ import axiosInstance from '../axiosInstance';
  */
 export const login = async (username, password) => {
   const { data } = await axiosInstance.post('/auth/login', { username, password });
+  console.log('=== FULL RESPONSE ===', JSON.stringify(data));
   // Backend trả: { code, message, result: { token, ... } }
   return data.result;
 };
@@ -59,3 +60,5 @@ export const resetPassword = async (email, code, newPassword) => {
   const { data } = await axiosInstance.post('/auth/reset-password', { email, code, newPassword });
   return data;
 };
+
+

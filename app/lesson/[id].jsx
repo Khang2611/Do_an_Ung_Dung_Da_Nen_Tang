@@ -102,9 +102,9 @@ export default function LessonScreen() {
           setIsHls(false);
         }
       } catch (err) {
-        console.warn(
-          "API bài học chưa sẵn sàng. Sử dụng Mock Data cho ID: " + id,
-        );
+        console.error("Lỗi tải bài học:", err.response?.status, err.response?.data || err.message);
+        Alert.alert("Lỗi", err.response?.data?.message || "Không thể tải bài học. Vui lòng thử lại.");
+        router.back();
         // Fallback sang Mock Data
         let foundLesson, foundCourse, foundChapter, foundIndex, foundLessons;
         for (const c of COURSES) {
