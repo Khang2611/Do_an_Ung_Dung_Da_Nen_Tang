@@ -1,19 +1,69 @@
-version: '3.8'
-
 services:
   minio:
     image: minio/minio:latest
-    container_name: minio_server
+    container_name: khoahoc_minio
     ports:
-      - "9000:9000" # Port cho API (ứng dụng kết nối vào)
-      - "9001:9001" # Port cho Web Console (bạn vào trình duyệt xem giao diện)
+      - "9000:9000"
+      - "9001:9001"
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password123
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
-    restart: always
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: khoahoc_backend
+    depends_on:
+      minio:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/khoahoc?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: "123456"
+      MINIO_ENDPOINT: http://host.docker.internal:9000
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
+      MINIO_ACCESS_KEY: admin
+      MINIO_SECRET_KEY: password123
+      MINIO_BUCKET_NAME: course-videos
+      PAYMENT_GATEWAY_URL: http://host.docker.internal:8090
+      PAYMENT_GATEWAY_RETURN_URL: http://localhost:5173/payment/return
+      PAYMENT_WEBHOOK_CALLBACK_URL: http://localhost:8080/api/webhook/payment
+      PAYMENT_MERCHANT_API_KEY: LMS_API_KEY
+      PAYMENT_WEBHOOK_API_KEY: LMS_API_KEY
+      PAYMENT_WEBHOOK_SECRET_KEY: SHARED_HMAC_SECRET_2024
+    restart: unless-stopped
+
+  payment-gateway:
+    build:
+      context: ./ThanhToan
+      dockerfile: Dockerfile
+    container_name: khoahoc_payment_gateway
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/khoahoc?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: "123456"
+      KHOAHOC_BASE_URL: http://host.docker.internal:8080
+      KHOAHOC_WEBHOOK_URL: http://host.docker.internal:8080/api/webhook/payment
+      KHOAHOC_WEBHOOK_API_KEY: LMS_API_KEY
+      KHOAHOC_WEBHOOK_SECRET_KEY: SHARED_HMAC_SECRET_2024
+      GATEWAY_MERCHANT_API_KEY: LMS_API_KEY
+      GATEWAY_HMAC_SECRET_KEY: SHARED_HMAC_SECRET_2024
+    restart: unless-stopped
 
 volumes:
   minio_data:

@@ -49,6 +49,12 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    public UserResponse getUserByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        return userMapper.toUserResponse(user);
+    }
+
     public List<UserResponse> getAllUsers() {
         return userMapper.toUserResponseList(userRepository.findAll());
     }
@@ -73,6 +79,12 @@ public class UserService {
 
         user = userRepository.save(user);
         return userMapper.toUserResponse(user);
+    }
+
+    public UserResponse updateCurrentUserProfile(String authenticatedUsername, UserUpdateRequest request) {
+        User currentUser = userRepository.findByUsername(authenticatedUsername)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        return updateUserProfile(currentUser.getUserId(), authenticatedUsername, request);
     }
 
     public UserResponse updateUserRole(Long id, String role) {

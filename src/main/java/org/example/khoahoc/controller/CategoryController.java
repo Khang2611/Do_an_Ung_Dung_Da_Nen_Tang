@@ -35,7 +35,7 @@ public class CategoryController {
 
     // Tất cả người dùng đã đăng nhập đều xem được danh mục
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllCategories() {
         ApiResponse<List<CategoryResponse>> response = new ApiResponse<>();
         response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
@@ -45,7 +45,7 @@ public class CategoryController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ApiResponse<CategoryResponse>> getCategory(@PathVariable Long id) {
         ApiResponse<CategoryResponse> response = new ApiResponse<>();
         response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());

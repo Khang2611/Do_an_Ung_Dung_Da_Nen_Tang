@@ -39,10 +39,16 @@ public class SecurityConfig {
             // ─────────────────────────────────────────────────────────────────
 
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/chapters/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/lessons/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/resources/**").permitAll()
                 // Webhook từ Gateway — xác thực bằng API/Secret key (không cần JWT)
                 .requestMatchers(HttpMethod.POST, "/api/webhook/payment").permitAll()
                 .anyRequest().authenticated()
@@ -57,6 +63,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
+                "http://localhost:5173",   // Frontend dev server
                 "http://localhost:8090",   // Payment Gateway
                 "http://localhost:8080"    // Self
         ));

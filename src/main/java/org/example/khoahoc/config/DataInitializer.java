@@ -52,7 +52,19 @@ public class DataInitializer implements CommandLineRunner {
         // Tạo file playlist mẫu trên MinIO để test
         try {
             String objectName = "test/playlist.m3u8";
-            String content = "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:10\n#EXTINF:10.0,\nsegment1.ts\n#EXTINF:10.0,\nsegment2.ts\n#EXT-X-ENDLIST";
+            try {
+                minioClient.statObject(
+                    io.minio.StatObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(objectName)
+                        .build()
+                );
+                log.info("Playlist video test da ton tai: {}/{}", bucketName, objectName);
+                return;
+            } catch (Exception ignored) {
+                // Chua co playlist thi tao file mau ben duoi.
+            }
+            String content = "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:10\n#EXTINF:10.0,\nsegment0.ts\n#EXTINF:10.0,\nsegment1.ts\n#EXT-X-ENDLIST";
             
             minioClient.putObject(
                 io.minio.PutObjectArgs.builder()

@@ -48,12 +48,12 @@ public class UserController {
     // Người dùng cập nhật thông tin cá nhân của chính họ 
     @PutMapping("/me")
     @PreAuthorize("hasAnyRole('USER', 'TEACHER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<UserResponse>> updateUserProfile(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserProfile(@RequestBody UserUpdateRequest request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         ApiResponse<UserResponse> response = new ApiResponse<>();
         response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
         response.setMessage("Cập nhật thông tin cá nhân thành công.");
-        response.setResult(userService.updateUserProfile(id, username, request));
+        response.setResult(userService.updateCurrentUserProfile(username, request));
         return ResponseEntity.ok(response);
     }
 

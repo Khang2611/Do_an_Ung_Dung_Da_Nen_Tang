@@ -35,7 +35,7 @@ public class LessonController {
 
     // Tất cả người dùng đã đăng nhập đều xem được
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ApiResponse<List<LessonResponse>>> getAllLessons() {
         ApiResponse<List<LessonResponse>> response = new ApiResponse<>();
         response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
@@ -45,7 +45,7 @@ public class LessonController {
     }
 
     @GetMapping("/chapter/{chapterId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ApiResponse<List<LessonResponse>>> getLessonsByChapterId(@PathVariable Long chapterId) {
         ApiResponse<List<LessonResponse>> response = new ApiResponse<>();
         response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
@@ -55,7 +55,7 @@ public class LessonController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER', 'USER')")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ApiResponse<LessonResponse>> getLesson(@PathVariable Long id) {
         ApiResponse<LessonResponse> response = new ApiResponse<>();
         response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());

@@ -104,10 +104,13 @@ public class AuthService {
                 user.getUsername(), roleName, deviceFingerprint);
 
         return LoginResponse.builder()
+                .userId(user.getUserId())
                 .accessToken(accessToken)
                 .refreshToken(refreshTokenString)
                 .tokenType("Bearer")
                 .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
                 .role(roleName)
                 .expiresIn(jwtProperties.getExpirationMs())
                 .build();

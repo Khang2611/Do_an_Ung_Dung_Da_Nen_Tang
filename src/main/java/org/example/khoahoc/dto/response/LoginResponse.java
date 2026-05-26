@@ -9,10 +9,13 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class LoginResponse {
+    Long userId;
     String accessToken;
     String refreshToken;
     String tokenType;
     String username;
+    String email;
+    String fullName;
     String role;
     long expiresIn; // milliseconds (access token)
 }

@@ -33,6 +33,15 @@ public class VideoService {
     @Value("${minio.bucket-name}")
     private String bucketName;
 
+    @Value("${minio.access-key}")
+    private String accessKey;
+
+    @Value("${minio.secret-key}")
+    private String secretKey;
+
+    @Value("${minio.public-endpoint:http://localhost:9000}")
+    private String publicEndpoint;
+
     /**
      * Layer 1 & 2: Kiểm tra enrollment và tạo Signed URL cho file MP4 đơn lẻ.
      */
@@ -43,7 +52,7 @@ public class VideoService {
                 .orElseThrow(() -> new RuntimeException("Lesson not found"));
 
         try {
-            return minioClient.getPresignedObjectUrl(
+            return publicMinioClient().getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
@@ -86,10 +95,15 @@ public class VideoService {
                     // Ký tên cho từng segment
                     return getSignedUrlForObject(baseDir + line, 30); // Segment hết hạn sau 30 phút
                 }
-                if (line.startsWith("URI=\"")) {
-                    // Nếu có key mã hóa (DRM Layer 4 - AES-128)
-                    String keyFile = line.substring(line.indexOf("\"") + 1, line.lastIndexOf("\""));
-                    return "URI=\"" + getSignedUrlForObject(baseDir + keyFile, 15) + "\"";
+                if (line.contains("URI=\"")) {
+                    // Nếu có key mã hóa AES-128 trong dòng #EXT-X-KEY thì ký lại URL key.
+                    int uriStart = line.indexOf("URI=\"") + 5;
+                    int uriEnd = line.indexOf("\"", uriStart);
+                    if (uriEnd > uriStart) {
+                        String keyFile = line.substring(uriStart, uriEnd);
+                        String signedKeyUrl = getSignedUrlForObject(baseDir + keyFile, 15);
+                        return line.substring(0, uriStart) + signedKeyUrl + line.substring(uriEnd);
+                    }
                 }
                 return line;
             }).collect(Collectors.joining("\n"));
@@ -102,7 +116,7 @@ public class VideoService {
 
     private String getSignedUrlForObject(String objectName, int expiryMinutes) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            return publicMinioClient().getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
@@ -113,6 +127,14 @@ public class VideoService {
         } catch (Exception e) {
             throw new RuntimeException("Error signing object: " + objectName);
         }
+    }
+
+    private MinioClient publicMinioClient() {
+        return MinioClient.builder()
+                .endpoint(publicEndpoint)
+                .credentials(accessKey, secretKey)
+                .region("us-east-1")
+                .build();
     }
 
     private void validateEnrollment(Long lessonId, Long userId) {

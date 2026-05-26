@@ -20,6 +20,7 @@ import java.util.List;
 import org.example.khoahoc.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -57,6 +58,16 @@ public class AuthController {
         response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
         response.setMessage("Đăng nhập thành công.");
         response.setResult(authService.login(request, httpRequest));
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> getMe() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        ApiResponse<UserResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
+        response.setResult(userService.getUserByUsername(username));
         return ResponseEntity.ok(response);
     }
 
