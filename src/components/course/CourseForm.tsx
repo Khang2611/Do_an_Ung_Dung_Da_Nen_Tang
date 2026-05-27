@@ -1,5 +1,5 @@
 import { BookOpen, CheckCircle2, FileText, Image, Plus, Send, Trash2, UploadCloud } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { Controller, useFieldArray, useForm, useWatch, type Control, type FieldErrors, type UseFormRegister, type UseFormSetValue } from "react-hook-form";
 import type { Chapter, Course } from "../../types/course";
 import { formatCurrency, formatStatus, getStatusBadgeVariant, normalizeCourseStatus } from "../../utils/format";
@@ -24,7 +24,7 @@ const defaultChapter = (): Chapter => ({ id: `ch-${Date.now()}-${Math.random()}`
 
 function normalizeDuration(duration?: string) {
   const match = String(duration || "").match(/\d+/);
-  return match ? match[0] : "";
+  return match ? match[0] : "10";
 }
 
 function getVideoCount(chapters: Chapter[] = []) {
@@ -52,29 +52,40 @@ function LessonFields({
     <div className="mt-4 space-y-3">
       {fields.map((lesson, lessonIndex) => (
         <div key={lesson.fieldId} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div className="grid gap-3 lg:grid-cols-[1fr_130px_150px_auto]">
+          <div className="grid gap-3 lg:grid-cols-[1fr_minmax(240px,320px)_auto]">
             <Input
               label="Tên bài học"
               placeholder="Ví dụ: JSX và Props"
               error={lessonErrors?.[lessonIndex]?.title?.message}
               {...register(`chapters.${chapterIndex}.lessons.${lessonIndex}.title`, { required: "Vui lòng nhập tên bài học." })}
             />
-            <Input
-              label="Thời lượng"
-              placeholder="Phút"
-              type="number"
-              min={1}
-              error={lessonErrors?.[lessonIndex]?.duration?.message}
-              {...register(`chapters.${chapterIndex}.lessons.${lessonIndex}.duration`, {
-                required: "Vui lòng nhập thời lượng.",
-                validate: (value) => Number(value) > 0 || "Thời lượng phải lớn hơn 0.",
-              })}
-            />
+            <input type="hidden" {...register(`chapters.${chapterIndex}.lessons.${lessonIndex}.duration`)} />
             <div>
               <span className="mb-1.5 block text-sm font-medium text-slate-700">Video</span>
               <Badge variant={lesson.hasVideo ? "success" : "slate"}>{lesson.hasVideo ? "Đã upload" : "Chưa có video"}</Badge>
+              <Controller
+                control={control}
+                name={`chapters.${chapterIndex}.lessons.${lessonIndex}.videoUrl`}
+                render={({ field }) => (
+                  <VideoUploadWidget
+                    lessonId={String(lesson.id)}
+                    lessonTitle={lesson.title || `Bài ${lessonIndex + 1}`}
+                    initialVideoUrl={field.value}
+                    onUploadSuccess={(url) => {
+                      field.onChange(url);
+                      setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.hasVideo`, Boolean(url), { shouldDirty: true });
+                      setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.videoStatus`, url ? "ready" : "missing", { shouldDirty: true });
+                    }}
+                    onClear={() => {
+                      field.onChange("");
+                      setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.hasVideo`, false, { shouldDirty: true });
+                      setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.videoStatus`, "missing", { shouldDirty: true });
+                    }}
+                  />
+                )}
+              />
             </div>
-            <div className="flex items-end gap-2">
+            <div className="flex items-start gap-2 pt-7">
               <Button type="button" variant="ghost" className="h-11 px-3 text-rose-600 hover:bg-rose-50" onClick={() => remove(lessonIndex)} disabled={fields.length === 1}>
                 <Trash2 size={17} />
               </Button>
@@ -84,27 +95,6 @@ function LessonFields({
             className="mt-3 min-h-20 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
             placeholder="Mô tả ngắn hoặc nội dung bài học"
             {...register(`chapters.${chapterIndex}.lessons.${lessonIndex}.content`)}
-          />
-          <Controller
-            control={control}
-            name={`chapters.${chapterIndex}.lessons.${lessonIndex}.videoUrl`}
-            render={({ field }) => (
-              <VideoUploadWidget
-                lessonId={String(lesson.id)}
-                lessonTitle={lesson.title || `Bài ${lessonIndex + 1}`}
-                initialVideoUrl={field.value}
-                onUploadSuccess={(url) => {
-                  field.onChange(url);
-                  setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.hasVideo`, Boolean(url), { shouldDirty: true });
-                  setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.videoStatus`, url ? "ready" : "missing", { shouldDirty: true });
-                }}
-                onClear={() => {
-                  field.onChange("");
-                  setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.hasVideo`, false, { shouldDirty: true });
-                  setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.videoStatus`, "missing", { shouldDirty: true });
-                }}
-              />
-            )}
           />
           <label className="mt-3 flex items-center gap-2 text-sm font-semibold text-slate-600">
             <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" {...register(`chapters.${chapterIndex}.lessons.${lessonIndex}.isPreview`)} />
@@ -120,11 +110,13 @@ function LessonFields({
 }
 
 export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onSubmit }: Props) {
+  const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
   const {
     register,
     handleSubmit,
     control,
     setError,
+    clearErrors,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<CourseFormValue>({
@@ -170,27 +162,27 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
     [values.title, values.description, values.thumbnail, values.price, totalLessons],
   );
 
-  const submit = async (values: CourseFormValue) => {
+  const submit = async (formValues: CourseFormValue) => {
     try {
-      if (!values.chapters?.length) {
+      if (!formValues.chapters?.length) {
         setError("root", { message: "Khóa học cần có ít nhất 1 chương." });
         return;
       }
-      const hasLesson = values.chapters.some((chapter) => chapter.lessons?.length);
+      const hasLesson = formValues.chapters.some((chapter) => chapter.lessons?.length);
       if (!hasLesson) {
         setError("root", { message: "Khóa học cần có ít nhất 1 bài học." });
         return;
       }
       await onSubmit({
-        ...values,
-        price: Number(values.price),
-        chapters: values.chapters.map((chapter) => ({
+        ...formValues,
+        price: Number(formValues.price),
+        chapters: formValues.chapters.map((chapter) => ({
           ...chapter,
           title: chapter.title.trim(),
           lessons: chapter.lessons.map((lesson) => ({
             ...lesson,
             title: lesson.title.trim(),
-            duration: `${Number(lesson.duration)} phút`,
+            duration: `${Number(lesson.duration || 10)} phút`,
             description: lesson.description || lesson.content || "",
             videoUrl: lesson.videoUrl || "",
             hasVideo: Boolean(lesson.hasVideo || lesson.videoUrl),
@@ -222,6 +214,7 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
     const reader = new FileReader();
     reader.onload = () => {
       setValue("thumbnail", String(reader.result || ""), { shouldDirty: true, shouldValidate: true });
+      clearErrors("thumbnail");
     };
     reader.onerror = () => setError("thumbnail", { message: "Không thể đọc file ảnh." });
     reader.readAsDataURL(file);
@@ -255,9 +248,10 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
               })}
             />
             <input type="hidden" {...register("thumbnail", { required: "Vui lòng tải thumbnail." })} />
+            <input ref={thumbnailInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => handleThumbnailFile(event.target.files?.[0])} />
             <div className="md:col-span-2">
               <span className="mb-1.5 block text-sm font-medium text-slate-700">Thumbnail khóa học</span>
-              <label className="flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 transition hover:border-indigo-300 hover:bg-indigo-50/40">
+              <div className="flex items-center gap-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-indigo-600 shadow-sm">
                   <UploadCloud size={22} />
                 </div>
@@ -265,11 +259,10 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
                   <div className="text-sm font-bold text-slate-900">Tải ảnh từ máy</div>
                   <div className="mt-0.5 text-xs font-medium text-slate-500">JPG, PNG hoặc WEBP, tối đa 3MB. Ảnh sẽ được lưu cùng dữ liệu khóa học.</div>
                 </div>
-                <Button type="button" variant="secondary" size="sm" className="pointer-events-none">
+                <Button type="button" variant="secondary" size="sm" onClick={() => thumbnailInputRef.current?.click()}>
                   <Image size={14} /> Chọn ảnh
                 </Button>
-                <input type="file" accept="image/*" className="hidden" onChange={(event) => handleThumbnailFile(event.target.files?.[0])} />
-              </label>
+              </div>
               {errors.thumbnail?.message && <span className="mt-1 block text-sm text-rose-600">{errors.thumbnail.message}</span>}
             </div>
             <label className="md:col-span-2">
