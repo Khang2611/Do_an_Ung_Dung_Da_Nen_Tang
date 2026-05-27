@@ -3,6 +3,7 @@ package org.example.khoahoc.service;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.GetObjectArgs;
+import io.minio.PutObjectArgs;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.example.khoahoc.repository.EnrollmentRepository;
 import org.example.khoahoc.repository.LessonRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -146,5 +148,26 @@ public class VideoService {
 
         enrollmentRepository.findByUserIdAndCourseIdAndStatus(userId, chapter.getCourseId(), "ACTIVE")
                 .orElseThrow(() -> new RuntimeException("You are not enrolled in this course or enrollment is inactive"));
+    }
+
+    /**
+     * Tải file video MP4 lên MinIO Private Bucket.
+     */
+    public String uploadVideoToMinio(Lesson lesson, MultipartFile file) {
+        String objectPath = "courses/lesson-" + lesson.getLessonId() + ".mp4";
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectPath)
+                            .stream(file.getInputStream(), file.getSize(), -1)
+                            .contentType("video/mp4")
+                            .build()
+            );
+            return objectPath;
+        } catch (Exception e) {
+            log.error("Lỗi khi đẩy video lên MinIO", e);
+            throw new RuntimeException("Không thể lưu trữ file video vào MinIO");
+        }
     }
 }

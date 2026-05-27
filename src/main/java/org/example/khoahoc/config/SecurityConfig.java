@@ -29,31 +29,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // ── THÊM MỚI: CORS cho phép Gateway :8090 gọi webhook ────────────
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            // ─────────────────────────────────────────────────────────────────
+                // ── THÊM MỚI: CORS cho phép Gateway :8090 gọi webhook ────────────
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // ─────────────────────────────────────────────────────────────────
 
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/chapters/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/lessons/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/resources/**").permitAll()
-                // Webhook từ Gateway — xác thực bằng API/Secret key (không cần JWT)
-                .requestMatchers(HttpMethod.POST, "/api/webhook/payment").permitAll()
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/chapters/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/lessons/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/resources/**").permitAll()
+                        // Webhook từ Gateway — xác thực bằng API/Secret key (không cần JWT)
+                        .requestMatchers(HttpMethod.POST, "/api/webhook/payment").permitAll()
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -63,9 +60,10 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-                "http://localhost:5173",   // Frontend dev server
-                "http://localhost:8090",   // Payment Gateway
-                "http://localhost:8080"    // Self
+                "http://localhost:5173", // Frontend dev server
+                "http://localhost:8090", // Payment Gateway
+                "http://localhost:8080", // Self
+                "http://localhost:8081"// Mobile
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));

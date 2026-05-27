@@ -48,7 +48,7 @@ services:
 
   payment-gateway:
     build:
-      context: ./ThanhToan
+      context: ../payment-gateway
       dockerfile: Dockerfile
     container_name: khoahoc_payment_gateway
     ports:

@@ -1,13 +1,20 @@
 package org.example.khoahoc.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.example.khoahoc.dto.response.ApiResponse;
+import org.example.khoahoc.entity.Lesson;
 import org.example.khoahoc.entity.User;
+import org.example.khoahoc.exception.AppException;
+import org.example.khoahoc.exception.ErrorCode;
+import org.example.khoahoc.repository.LessonRepository;
 import org.example.khoahoc.repository.UserRepository;
 import org.example.khoahoc.service.VideoService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/videos")
@@ -16,6 +23,7 @@ public class VideoController {
 
     private final VideoService videoService;
     private final UserRepository userRepository;
+    private final LessonRepository lessonRepository;
 
     /**
      * Endpoint để lấy link Signed URL cho video MP4 đơn lẻ.
@@ -41,6 +49,28 @@ public class VideoController {
                 // Quan trọng: Chặn cache để URL luôn mới
                 .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
                 .body(playlistContent);
+    }
+
+    @PostMapping("/upload/{lessonId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<String>> uploadVideo(
+            @PathVariable Long lessonId,
+            @RequestParam("file") MultipartFile file) {
+        
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_FOUND));
+
+        String objectPath = videoService.uploadVideoToMinio(lesson, file);
+
+        lesson.setVideoUrl(objectPath);
+        lessonRepository.save(lesson);
+
+        ApiResponse<String> response = new ApiResponse<>();
+        response.setCode(ErrorCode.SUCCESS.getCode());
+        response.setMessage("Tải lên video thành công.");
+        response.setResult(objectPath);
+        
+        return ResponseEntity.ok(response);
     }
 
     private Long getCurrentUserId() {
