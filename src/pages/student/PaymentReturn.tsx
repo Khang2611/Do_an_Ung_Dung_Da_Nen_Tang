@@ -1,43 +1,56 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { checkMyEnrollment } from "../../api/enrollmentApi";
 import { clearPendingPayment, getPaymentTransaction, getPendingPayment } from "../../api/paymentApi";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
 
 export function PaymentReturn() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [error, setError] = useState("");
+  const pendingPayment = useMemo(() => getPendingPayment(), []);
+
+  const courseId = params.get("courseId") || params.get("orderId") || pendingPayment?.courseId || "";
+  const orderId = params.get("orderId") || pendingPayment?.orderId || courseId;
+  const transactionId = params.get("transactionId") || (pendingPayment?.transactionId ? String(pendingPayment.transactionId) : "");
 
   useEffect(() => {
     let cancelled = false;
 
     async function resolvePayment() {
-      const pending = getPendingPayment();
-      if (!pending?.transactionId) {
-        setError("Không tìm thấy giao dịch đang chờ.");
+      if (!courseId) {
+        setError("Không tìm thấy khóa học cần mở sau thanh toán.");
         return;
       }
 
-      for (let attempt = 0; attempt < 6; attempt += 1) {
-        const transaction = await getPaymentTransaction(pending.transactionId);
-        const status = String(transaction.status || "").toUpperCase();
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        let status = "";
 
+        if (transactionId) {
+          const transaction = await getPaymentTransaction(transactionId);
+          status = String(transaction.status || "").toUpperCase();
+
+          if (cancelled) return;
+          if (status === "FAILED" || status === "CANCELLED") {
+            clearPendingPayment();
+            navigate(`/payment/failed?courseId=${courseId}&orderId=${orderId}`, { replace: true });
+            return;
+          }
+        }
+
+        const enrolled = await checkMyEnrollment(courseId);
         if (cancelled) return;
-        if (status === "SUCCESS") {
+        if (enrolled) {
           clearPendingPayment();
-          navigate(`/payment/success?courseId=${pending.courseId}&orderId=${pending.orderId}`, { replace: true });
-          return;
-        }
-        if (status === "FAILED" || status === "CANCELLED") {
-          clearPendingPayment();
-          navigate(`/payment/failed?courseId=${pending.courseId}&orderId=${pending.orderId}`, { replace: true });
+          navigate(`/payment/success?courseId=${courseId}&orderId=${orderId}`, { replace: true });
           return;
         }
 
-        await new Promise((resolve) => window.setTimeout(resolve, 1000));
+        await new Promise((resolve) => window.setTimeout(resolve, status === "SUCCESS" ? 1000 : 1500));
       }
 
-      if (!cancelled) navigate(`/payment/failed?courseId=${pending.courseId}&orderId=${pending.orderId}`, { replace: true });
+      if (!cancelled) navigate(`/payment/failed?courseId=${courseId}&orderId=${orderId}`, { replace: true });
     }
 
     resolvePayment().catch((err) => {
@@ -47,7 +60,7 @@ export function PaymentReturn() {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [courseId, navigate, orderId, transactionId]);
 
   if (error) {
     return <div className="mx-auto max-w-2xl px-4 py-12"><ErrorMessage title="Không thể kiểm tra thanh toán" message={error} /></div>;

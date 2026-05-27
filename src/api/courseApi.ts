@@ -15,6 +15,10 @@ function asArray<T>(value: T[] | T | null | undefined): T[] {
   return value == null ? [] : [value];
 }
 
+function isPersistedId(id?: string, temporaryPrefix?: string) {
+  return Boolean(id) && (!temporaryPrefix || !String(id).startsWith(temporaryPrefix)) && Number.isFinite(Number(id));
+}
+
 function normalizeLesson(raw: any): Lesson {
   return {
     id: String(raw?.lessonId ?? raw?.id),
@@ -77,17 +81,103 @@ async function getBackendChapters(courseId: string): Promise<Chapter[]> {
   const rawChapters = asArray(unwrap<any[] | any>(chapterResponse));
   return Promise.all(
     rawChapters.map(async (chapter) => {
-      const lessonResponse = await axiosClient.get(`${LESSONS}/chapter/${chapter.chapterId}`);
+      const chapterId = String(chapter.chapterId ?? chapter.id);
+      const lessonResponse = await axiosClient.get(`${LESSONS}/chapter/${chapterId}`);
       const lessons = asArray(unwrap<any[] | any>(lessonResponse)).map(normalizeLesson);
       return normalizeChapter(chapter, lessons);
     }),
   );
 }
 
+async function createBackendChapter(courseId: string, chapter: Chapter, orderIndex: number) {
+  const response = await axiosClient.post(CHAPTERS, {
+    courseId: Number(courseId),
+    title: chapter.title,
+    orderIndex,
+  });
+  return normalizeChapter(unwrap<any>(response));
+}
+
+async function updateBackendChapter(chapter: Chapter, orderIndex: number) {
+  const response = await axiosClient.put(`${CHAPTERS}/${chapter.id}`, {
+    title: chapter.title,
+    orderIndex,
+  });
+  return normalizeChapter(unwrap<any>(response));
+}
+
+async function createBackendLesson(chapterId: string, lesson: Lesson, orderIndex: number) {
+  const response = await axiosClient.post(LESSONS, {
+    chapterId: Number(chapterId),
+    title: lesson.title,
+    content: lesson.content,
+    videoUrl: lesson.videoUrl || "",
+    duration: toMinutes(lesson.duration),
+    orderIndex,
+  });
+  return normalizeLesson(unwrap<any>(response));
+}
+
+async function updateBackendLesson(lesson: Lesson, orderIndex: number) {
+  const response = await axiosClient.put(`${LESSONS}/${lesson.id}`, {
+    title: lesson.title,
+    content: lesson.content,
+    videoUrl: lesson.videoUrl || "",
+    duration: toMinutes(lesson.duration),
+    orderIndex,
+  });
+  return normalizeLesson(unwrap<any>(response));
+}
+
+async function syncCourseContent(courseId: string, chapters: Chapter[] = []) {
+  const syncedChapters: Chapter[] = [];
+  const existingChapters = await getBackendChapters(courseId);
+
+  for (const [chapterIndex, chapter] of chapters.entries()) {
+    const savedChapter = isPersistedId(chapter.id, "ch-")
+      ? await updateBackendChapter(chapter, chapterIndex + 1)
+      : await createBackendChapter(courseId, chapter, chapterIndex + 1);
+    const existingLessons = existingChapters.find((item) => item.id === savedChapter.id)?.lessons || [];
+    const syncedLessons: Lesson[] = [];
+
+    for (const [lessonIndex, lesson] of chapter.lessons.entries()) {
+      const savedLesson = isPersistedId(lesson.id, "ls-")
+        ? await updateBackendLesson(lesson, lessonIndex + 1)
+        : await createBackendLesson(savedChapter.id, lesson, lessonIndex + 1);
+      syncedLessons.push(savedLesson);
+    }
+
+    const keptLessonIds = new Set(syncedLessons.map((lesson) => lesson.id));
+    await Promise.all(
+      existingLessons
+        .filter((lesson) => isPersistedId(lesson.id) && !keptLessonIds.has(lesson.id))
+        .map((lesson) => axiosClient.delete(`${LESSONS}/${lesson.id}`)),
+    );
+
+    syncedChapters.push({ ...savedChapter, lessons: syncedLessons });
+  }
+
+  const keptChapterIds = new Set(syncedChapters.map((chapter) => chapter.id));
+  await Promise.all(
+    existingChapters
+      .filter((chapter) => isPersistedId(chapter.id) && !keptChapterIds.has(chapter.id))
+      .map((chapter) => axiosClient.delete(`${CHAPTERS}/${chapter.id}`)),
+  );
+
+  return syncedChapters;
+}
+
 export async function getCourses(params?: CourseFilters): Promise<Course[]> {
   if (USE_MOCK) return filterCourses(params);
   const response = await axiosClient.get(COURSES, { params });
-  return unwrap<any[]>(response).map((item) => normalizeCourse(item));
+  const rawCourses = asArray(unwrap<any[] | any>(response));
+  return Promise.all(
+    rawCourses.map(async (item) => {
+      const course = normalizeCourse(item);
+      const chapters = await getBackendChapters(course.id);
+      return normalizeCourse(item, chapters);
+    }),
+  );
 }
 
 export async function getCourseById(id: string): Promise<Course> {
@@ -116,34 +206,15 @@ export async function createCourse(data: Partial<Course>) {
     return course;
   }
 
-  const courseResponse = await axiosClient.post(COURSES, {
+  const response = await axiosClient.post(COURSES, {
     title: data.title,
     description: data.description,
     thumbnail: data.thumbnail,
     price: data.price,
     categoryId: (data as any).categoryId,
   });
-  const course = normalizeCourse(unwrap<any>(courseResponse));
-
-  for (const [chapterIndex, chapter] of (data.chapters || []).entries()) {
-    const chapterResponse = await axiosClient.post(CHAPTERS, {
-      courseId: Number(course.id),
-      title: chapter.title,
-      orderIndex: chapterIndex + 1,
-    });
-    const createdChapter = unwrap<any>(chapterResponse);
-    for (const [lessonIndex, lesson] of chapter.lessons.entries()) {
-      await axiosClient.post(LESSONS, {
-        chapterId: createdChapter.chapterId,
-        title: lesson.title,
-        content: lesson.content,
-        videoUrl: lesson.videoUrl || "",
-        duration: toMinutes(lesson.duration),
-        orderIndex: lessonIndex + 1,
-      });
-    }
-  }
-
+  const course = normalizeCourse(unwrap<any>(response));
+  await syncCourseContent(course.id, data.chapters || []);
   return getCourseById(course.id);
 }
 
@@ -163,7 +234,8 @@ export async function updateCourse(id: string, data: Partial<Course>) {
     price: data.price,
     categoryId: (data as any).categoryId,
   });
-  return normalizeCourse(unwrap<any>(response), data.chapters);
+  const chapters = await syncCourseContent(id, data.chapters || []);
+  return normalizeCourse(unwrap<any>(response), chapters);
 }
 
 export async function submitCourseForReview(id: string) {
