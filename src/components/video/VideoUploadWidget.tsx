@@ -12,7 +12,7 @@ interface VideoUploadWidgetProps {
   onClear?: () => void;
 }
 
-const MAX_SIZE = 100 * 1024 * 1024;
+const MAX_SIZE = 500 * 1024 * 1024;
 
 function getUploadedPath(response: any) {
   return response?.result?.videoUrl || response?.result || response?.data?.videoUrl || response?.data || "";
@@ -35,7 +35,7 @@ export function VideoUploadWidget({ lessonId, lessonTitle, initialVideoUrl, onUp
       return;
     }
     if (file.size > MAX_SIZE) {
-      setError("Dung lượng video không được vượt quá 100MB.");
+      setError("Dung lượng video không được vượt quá 500MB.");
       return;
     }
 
@@ -129,7 +129,7 @@ export function VideoUploadWidget({ lessonId, lessonTitle, initialVideoUrl, onUp
         >
           <UploadCloud className="mb-1 h-7 w-7 text-indigo-500" />
           <span className="text-xs font-semibold text-slate-700">Kéo thả hoặc nhấp để tải lên video bài giảng (.mp4)</span>
-          <span className="mt-0.5 text-[10px] text-slate-400">Dung lượng tối đa 100MB</span>
+          <span className="mt-0.5 text-[10px] text-slate-400">Dung lượng tối đa 500MB</span>
           <input ref={inputRef} type="file" accept="video/mp4" className="hidden" onChange={(event) => void handleFile(event.target.files?.[0])} />
         </label>
       )}

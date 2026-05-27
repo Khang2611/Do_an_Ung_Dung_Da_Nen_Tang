@@ -3,8 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { createCourse } from "../../api/courseApi";
 import { Button } from "../../components/common/Button";
 import { PageHeader } from "../../components/common/PageHeader";
-import { CourseForm } from "../../components/course/CourseForm";
 import { showToast } from "../../components/common/Toast";
+import { CourseForm } from "../../components/course/CourseForm";
 
 export function CreateCourse() {
   const navigate = useNavigate();
@@ -13,14 +13,14 @@ export function CreateCourse() {
     <div className="space-y-6">
       <PageHeader
         title="Tạo khóa học"
-        description="Xây dựng thông tin, nội dung bài học và trạng thái xuất bản cho khóa học mới."
+        description="Tạo thông tin khóa học trước, sau đó hệ thống sẽ mở màn sửa khóa học để giảng viên tải video lên từng bài học."
         action={<Link to="/instructor/courses"><Button variant="secondary"><X size={16} />Hủy</Button></Link>}
       />
       <CourseForm
-        submitLabel="Lưu khóa học"
+        submitLabel="Lưu và tải video"
         onSubmit={async (value) => {
           const lessons = value.chapters.flatMap((chapter) => chapter.lessons);
-          await createCourse({
+          const created = await createCourse({
             ...value,
             lessons,
             totalLessons: lessons.length,
@@ -29,8 +29,8 @@ export function CreateCourse() {
             rating: 0,
             studentsCount: 0,
           });
-          showToast(value.status === "PENDING_REVIEW" ? "Đã tạo khóa học và gửi chờ duyệt." : "Đã lưu bản nháp khóa học.", "success");
-          navigate("/instructor/courses");
+          showToast("Đã tạo khóa học. Bạn có thể tải video lên từng bài học.", "success");
+          navigate(`/instructor/courses/${created.id}/edit`);
         }}
       />
     </div>

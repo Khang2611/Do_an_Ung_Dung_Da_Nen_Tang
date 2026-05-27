@@ -1,4 +1,4 @@
-import { BookOpen, CheckCircle2, FileText, Image, Plus, Send, Trash2 } from "lucide-react";
+import { BookOpen, CheckCircle2, FileText, Image, Plus, Send, Trash2, UploadCloud } from "lucide-react";
 import { useMemo } from "react";
 import { Controller, useFieldArray, useForm, useWatch, type Control, type FieldErrors, type UseFormRegister, type UseFormSetValue } from "react-hook-form";
 import type { Chapter, Course } from "../../types/course";
@@ -18,6 +18,7 @@ interface Props {
 }
 
 const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80";
+const MAX_THUMBNAIL_SIZE = 3 * 1024 * 1024;
 const defaultLesson = () => ({ id: `ls-${Date.now()}-${Math.random()}`, title: "", duration: "10", content: "", description: "", isPreview: false, hasVideo: false, videoStatus: "missing" as const, videoUrl: "" });
 const defaultChapter = (): Chapter => ({ id: `ch-${Date.now()}-${Math.random()}`, title: "", lessons: [defaultLesson()] });
 
@@ -207,6 +208,25 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
     void handleSubmit(submit)();
   };
 
+  const handleThumbnailFile = (file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("thumbnail", { message: "Vui lòng chọn file ảnh." });
+      return;
+    }
+    if (file.size > MAX_THUMBNAIL_SIZE) {
+      setError("thumbnail", { message: "Ảnh thumbnail không được vượt quá 3MB." });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setValue("thumbnail", String(reader.result || ""), { shouldDirty: true, shouldValidate: true });
+    };
+    reader.onerror = () => setError("thumbnail", { message: "Không thể đọc file ảnh." });
+    reader.readAsDataURL(file);
+  };
+
   return (
     <form onSubmit={handleSubmit(submit)} className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="space-y-6">
@@ -234,13 +254,24 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
                 validate: (value) => Number(value) >= 0 || "Giá phải lớn hơn hoặc bằng 0.",
               })}
             />
-            <Input
-              label="Thumbnail URL"
-              className="md:col-span-2"
-              icon={<Image size={17} />}
-              error={errors.thumbnail?.message}
-              {...register("thumbnail", { required: "Vui lòng nhập thumbnail." })}
-            />
+            <input type="hidden" {...register("thumbnail", { required: "Vui lòng tải thumbnail." })} />
+            <div className="md:col-span-2">
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">Thumbnail khóa học</span>
+              <label className="flex cursor-pointer items-center gap-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 transition hover:border-indigo-300 hover:bg-indigo-50/40">
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-indigo-600 shadow-sm">
+                  <UploadCloud size={22} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-slate-900">Tải ảnh từ máy</div>
+                  <div className="mt-0.5 text-xs font-medium text-slate-500">JPG, PNG hoặc WEBP, tối đa 3MB. Ảnh sẽ được lưu cùng dữ liệu khóa học.</div>
+                </div>
+                <Button type="button" variant="secondary" size="sm" className="pointer-events-none">
+                  <Image size={14} /> Chọn ảnh
+                </Button>
+                <input type="file" accept="image/*" className="hidden" onChange={(event) => handleThumbnailFile(event.target.files?.[0])} />
+              </label>
+              {errors.thumbnail?.message && <span className="mt-1 block text-sm text-rose-600">{errors.thumbnail.message}</span>}
+            </div>
             <label className="md:col-span-2">
               <span className="mb-1.5 block text-sm font-medium text-slate-700">Mô tả chi tiết</span>
               <textarea

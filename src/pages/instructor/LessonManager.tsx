@@ -9,6 +9,7 @@ import { ErrorMessage } from "../../components/common/ErrorMessage";
 import { Loading } from "../../components/common/Loading";
 import { PageHeader } from "../../components/common/PageHeader";
 import { UploadVideoModal } from "../../components/video/UploadVideoModal";
+import { LessonVideoPlayer } from "../../components/video/LessonVideoPlayer";
 import type { Course, Lesson } from "../../types/course";
 import { formatStatus, getStatusBadgeVariant, normalizeCourseStatus } from "../../utils/format";
 
@@ -26,6 +27,7 @@ export function LessonManager() {
   const [error, setError] = useState("");
   const [uploadLesson, setUploadLesson] = useState<Lesson | null>(null);
   const [deleteLesson, setDeleteLesson] = useState<Lesson | null>(null);
+  const [previewLesson, setPreviewLesson] = useState<Lesson | null>(null);
 
   useEffect(() => {
     getCourseById(courseId).then(setCourse).catch((err) => setError(err instanceof Error ? err.message : "Không thể tải khóa học."));
@@ -83,7 +85,7 @@ export function LessonManager() {
                   <div className="flex flex-wrap items-center gap-2">
                     {videoBadge(lesson)}
                     <Button variant="secondary" size="sm" onClick={() => setUploadLesson(lesson)}><Upload size={14} />Upload video</Button>
-                    <Button variant="secondary" size="sm"><Eye size={14} />Xem thử</Button>
+                    <Button variant="secondary" size="sm" disabled={!lesson.videoUrl} onClick={() => setPreviewLesson(lesson)}><Eye size={14} />Xem thử</Button>
                     <Button variant="ghost" size="sm"><Edit3 size={14} />Sửa</Button>
                     <Button variant="danger" size="sm" onClick={() => setDeleteLesson(lesson)}><Trash2 size={14} />Xóa</Button>
                   </div>
@@ -94,7 +96,32 @@ export function LessonManager() {
         ))}
       </section>
 
-      <UploadVideoModal isOpen={Boolean(uploadLesson)} lessonId={uploadLesson?.id || ""} lessonTitle={uploadLesson?.title || ""} onClose={() => setUploadLesson(null)} />
+      <UploadVideoModal
+        isOpen={Boolean(uploadLesson)}
+        lessonId={uploadLesson?.id || ""}
+        lessonTitle={uploadLesson?.title || ""}
+        onClose={() => setUploadLesson(null)}
+        onUploaded={(videoUrl) => {
+          setCourse((current) => current && {
+            ...current,
+            chapters: current.chapters.map((chapter) => ({
+              ...chapter,
+              lessons: chapter.lessons.map((lesson) => lesson.id === uploadLesson?.id ? { ...lesson, videoUrl, hasVideo: true, videoStatus: "ready" } : lesson),
+            })),
+          });
+        }}
+      />
+      {previewLesson?.videoUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" onClick={() => setPreviewLesson(null)} />
+          <div className="relative w-full max-w-4xl rounded-2xl bg-white p-4 shadow-2xl">
+            <button className="absolute right-4 top-4 z-10 rounded-lg bg-white/90 p-1.5 text-slate-500 shadow hover:text-slate-900" onClick={() => setPreviewLesson(null)}>
+              ×
+            </button>
+            <LessonVideoPlayer lessonId={previewLesson.id} videoUrl={previewLesson.videoUrl} title={previewLesson.title} />
+          </div>
+        </div>
+      )}
       <ConfirmDialog
         isOpen={Boolean(deleteLesson)}
         title="Xóa bài học"

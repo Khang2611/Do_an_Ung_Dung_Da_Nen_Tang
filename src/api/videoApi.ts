@@ -35,7 +35,7 @@ export async function uploadLessonVideo(lessonId: string | number, file: File, o
 
   const response = await axiosClient.post(`/api/videos/upload/${lessonId}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
-    timeout: 120000,
+    timeout: 10 * 60 * 1000,
     onUploadProgress: (event) => {
       if (!event.total || !onProgress) return;
       onProgress(Math.round((event.loaded / event.total) * 100));

@@ -119,6 +119,7 @@ export async function createCourse(data: Partial<Course>) {
   const courseResponse = await axiosClient.post(COURSES, {
     title: data.title,
     description: data.description,
+    thumbnail: data.thumbnail,
     price: data.price,
     categoryId: (data as any).categoryId,
   });
@@ -158,6 +159,7 @@ export async function updateCourse(id: string, data: Partial<Course>) {
   const response = await axiosClient.put(`${COURSES}/${id}`, {
     title: data.title,
     description: data.description,
+    thumbnail: data.thumbnail,
     price: data.price,
     categoryId: (data as any).categoryId,
   });
