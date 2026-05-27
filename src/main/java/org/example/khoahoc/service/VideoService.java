@@ -4,6 +4,7 @@ import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.GetObjectArgs;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -179,5 +180,27 @@ public class VideoService {
             log.error("Lỗi khi đẩy video lên MinIO", e);
             throw new RuntimeException("Không thể lưu trữ file video vào MinIO");
         }
+    }
+
+    public void deleteLessonVideo(Long lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+
+        String objectPath = lesson.getVideoUrl();
+        if (objectPath != null && !objectPath.isBlank()) {
+            try {
+                minioClient.removeObject(
+                        RemoveObjectArgs.builder()
+                                .bucket(bucketName)
+                                .object(objectPath)
+                                .build()
+                );
+            } catch (Exception e) {
+                log.warn("Khong the xoa object video khoi MinIO: {}", objectPath, e);
+            }
+        }
+
+        lesson.setVideoUrl(null);
+        lessonRepository.save(lesson);
     }
 }

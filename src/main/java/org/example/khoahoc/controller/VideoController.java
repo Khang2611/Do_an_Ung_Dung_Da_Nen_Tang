@@ -73,6 +73,17 @@ public class VideoController {
         return ResponseEntity.ok(response);
     }
 
+    @DeleteMapping("/{lessonId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteVideo(@PathVariable Long lessonId) {
+        videoService.deleteLessonVideo(lessonId);
+
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(ErrorCode.SUCCESS.getCode());
+        response.setMessage("Xóa video bài học thành công.");
+        return ResponseEntity.ok(response);
+    }
+
     private Long getCurrentUserId() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
