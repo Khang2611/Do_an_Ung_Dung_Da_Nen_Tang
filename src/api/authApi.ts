@@ -2,6 +2,7 @@ import axiosClient, { USE_MOCK, unwrap } from "./axiosClient";
 import { AUTH_LOGIN, AUTH_ME, AUTH_REGISTER } from "./endpoints";
 import { mockLogin, mockRegister } from "../data/mockData";
 import type { AuthUser, LoginPayload, LoginResult, RegisterPayload } from "../types/auth";
+import { toApiRole, toFrontendRole } from "../utils/format";
 
 function findToken(raw: any): string {
   return raw?.token || raw?.accessToken || raw?.access_token || raw?.jwt || "";
@@ -15,10 +16,6 @@ function firstToken(...items: any[]) {
   return "";
 }
 
-function findRefreshToken(raw: any): string {
-  return raw?.refreshToken || raw?.refresh_token || raw?.data?.refreshToken || raw?.result?.refreshToken || "";
-}
-
 function findRole(user: any, raw: any): string {
   const authority =
     user?.authorities?.[0]?.authority ||
@@ -26,19 +23,7 @@ function findRole(user: any, raw: any): string {
     raw?.data?.authorities?.[0]?.authority ||
     raw?.result?.authorities?.[0]?.authority;
 
-  return String(user?.role || raw?.role || raw?.data?.role || raw?.result?.role || authority || "student").replace("ROLE_", "");
-}
-
-function normalizeAuthUser(raw: any): AuthUser {
-  return {
-    ...raw,
-    id: raw?.id ?? raw?.userId,
-    username: raw?.username || raw?.email || "user",
-    email: raw?.email || "",
-    fullName: raw?.fullName || raw?.name || raw?.username,
-    role: findRole(raw, raw),
-    status: raw?.status || "active",
-  };
+  return toFrontendRole(String(user?.role || raw?.role || raw?.data?.role || raw?.result?.role || authority || "student"));
 }
 
 export function normalizeLoginResponse(rawResponse: any): LoginResult {
@@ -58,12 +43,16 @@ export function normalizeLoginResponse(rawResponse: any): LoginResult {
   if (!token) throw new Error("Backend không trả về token đăng nhập.");
 
   const user: AuthUser = {
-    ...normalizeAuthUser(userSource),
+    ...userSource,
+    id: userSource?.id ?? userSource?.userId ?? raw?.id ?? raw?.userId,
+    username: userSource?.username || userSource?.email || raw?.username || raw?.email || "user",
+    email: userSource?.email || raw?.email,
+    fullName: userSource?.fullName || userSource?.name || raw?.fullName || raw?.name || userSource?.username,
+    role: findRole(userSource, rawResponse),
     accessToken: token,
-    refreshToken: findRefreshToken(rawResponse),
   };
 
-  return { user, token, refreshToken: user.refreshToken };
+  return { user, token };
 }
 
 export async function login(data: LoginPayload): Promise<LoginResult> {
@@ -74,7 +63,7 @@ export async function login(data: LoginPayload): Promise<LoginResult> {
 
 export async function register(data: RegisterPayload) {
   if (USE_MOCK) return mockRegister(data);
-  const response = await axiosClient.post(AUTH_REGISTER, data);
+  const response = await axiosClient.post(AUTH_REGISTER, { ...data, role: toApiRole(data.role || "student") });
   return unwrap(response);
 }
 
@@ -85,10 +74,10 @@ export async function getMe(): Promise<AuthUser> {
     return JSON.parse(raw) as AuthUser;
   }
   const response = await axiosClient.get(AUTH_ME);
-  return normalizeAuthUser(unwrap<any>(response));
+  return unwrap<AuthUser>(response);
 }
 
-export async function updateProfile(data: { fullName?: string; email?: string; password?: string }): Promise<AuthUser> {
+export async function updateProfile(data: { fullName?: string; email?: string; avatar?: string; password?: string }): Promise<AuthUser> {
   if (USE_MOCK) {
     const raw = localStorage.getItem("auth_user");
     if (!raw) throw new Error("Chưa đăng nhập.");
@@ -97,11 +86,22 @@ export async function updateProfile(data: { fullName?: string; email?: string; p
     return user as AuthUser;
   }
   const response = await axiosClient.put("/api/users/me", data);
-  return normalizeAuthUser(unwrap<any>(response));
+  return unwrap<AuthUser>(response);
 }
 
-export async function logout(refreshToken?: string) {
-  if (USE_MOCK) return;
-  if (!refreshToken) return;
-  await axiosClient.post("/api/auth/logout", { refreshToken });
+export async function uploadAvatar(file: File): Promise<AuthUser> {
+  if (USE_MOCK) {
+    const raw = localStorage.getItem("auth_user");
+    if (!raw) throw new Error("Chưa đăng nhập.");
+    const user = { ...JSON.parse(raw), avatar: URL.createObjectURL(file) };
+    localStorage.setItem("auth_user", JSON.stringify(user));
+    return user as AuthUser;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await axiosClient.post("/api/users/me/avatar", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return unwrap<AuthUser>(response);
 }

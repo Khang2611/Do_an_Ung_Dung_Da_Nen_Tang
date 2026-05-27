@@ -1,4 +1,4 @@
-export type CourseStatus = "draft" | "published" | "pending" | "hidden" | "approved";
+export type CourseStatus = "draft" | "published" | "pending" | "hidden" | "approved" | "rejected" | "DRAFT" | "PENDING_REVIEW" | "APPROVED" | "REJECTED";
 
 export interface Lesson {
   id: string;
@@ -6,6 +6,10 @@ export interface Lesson {
   duration: string;
   type?: "video" | "quiz" | "reading";
   content?: string;
+  description?: string;
+  isPreview?: boolean;
+  hasVideo?: boolean;
+  videoStatus?: "missing" | "processing" | "ready" | "error";
   videoUrl?: string;
 }
 
@@ -22,6 +26,7 @@ export interface Course {
   category: string;
   level: string;
   price: number;
+  discountPrice?: number;
   thumbnail: string;
   instructorName: string;
   totalLessons: number;
@@ -38,14 +43,32 @@ export interface CourseFilters {
   search?: string;
   category?: string;
   level?: string;
+  price?: "all" | "free" | "paid";
 }
 
 export interface Enrollment {
   id: string;
+  userId?: string;
   courseId: string;
   courseTitle: string;
   studentName: string;
   studentEmail: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "ACTIVE" | "CANCELLED" | "PENDING";
+  paymentStatus?: "PAID" | "PENDING" | "FAILED";
+  paymentMethod?: "VNPAY" | "MOMO" | "BANK_TRANSFER" | "DEMO";
+  amount?: number;
+  enrolledAt?: string;
+  progress?: number;
+  completedLessons?: string[];
+  createdAt: string;
+}
+
+export interface PaymentOrder {
+  id: string;
+  userId: string;
+  courseId: string;
+  amount: number;
+  method: "VNPAY" | "MOMO" | "BANK_TRANSFER" | "DEMO";
+  status: "PAID" | "PENDING" | "FAILED";
   createdAt: string;
 }

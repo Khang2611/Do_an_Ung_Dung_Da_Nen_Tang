@@ -10,5 +10,3 @@ export const USERS = "/api/users";
 export const ENROLLMENTS = "/api/enrollments";
 export const ENROLLMENTS_ME = "/api/enrollments/me";
 export const LEARNING_PROGRESS = "/api/learning-progresses";
-export const PAYMENT_TRANSACTIONS = "/api/payment-transactions";
-export const VIDEOS = "/api/videos";

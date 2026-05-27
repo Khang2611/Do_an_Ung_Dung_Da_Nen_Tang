@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== "false";
 
 export class ApiError extends Error {
@@ -39,7 +39,6 @@ axiosClient.interceptors.response.use(
   (error) => {
     if (error?.response?.status === 401) {
       localStorage.removeItem("auth_token");
-      localStorage.removeItem("auth_refresh_token");
       localStorage.removeItem("auth_user");
       window.dispatchEvent(new Event("auth:logout"));
       if (!window.location.pathname.includes("/login")) window.location.href = "/login";

@@ -1,62 +1,88 @@
-import axiosClient, { unwrap } from "./axiosClient";
-import { PAYMENT_TRANSACTIONS } from "./endpoints";
+import axiosClient, { USE_MOCK, unwrap } from "./axiosClient";
+import { addMockPaidEnrollment } from "../data/mockData";
 
-export interface PaymentTransaction {
-  transactionId: number;
-  userId: number;
-  orderId: number;
-  amount: number;
-  paymentMethod?: string;
-  transactionRef: string;
-  status: string;
+export type PaymentMethod = "VNPAY" | "MOMO" | "BANK_TRANSFER" | "DEMO";
+
+export interface CreatePaymentResult {
+  paymentUrl?: string;
   gatewayUrl?: string;
+  orderId: string;
+  courseId: string;
+  status: "PAID" | "PENDING" | "FAILED";
+  transactionId?: number;
+  transactionRef?: string;
 }
 
 export interface PendingPayment {
   courseId: string;
-  transactionId: number;
-  transactionRef: string;
-  status: string;
+  orderId: string;
+  transactionId?: number;
+  transactionRef?: string;
   createdAt: string;
 }
 
 const PENDING_PAYMENT_KEY = "pending_payment";
 
-export async function createPayment(courseId: string): Promise<PaymentTransaction> {
-  const rawUser = localStorage.getItem("auth_user");
-  let user = rawUser ? JSON.parse(rawUser) : null;
-  if (!(user?.id ?? user?.userId)) {
-    const meResponse = await axiosClient.get("/api/auth/me");
-    user = unwrap<any>(meResponse);
-    localStorage.setItem("auth_user", JSON.stringify({ ...user, id: user?.id ?? user?.userId }));
+function getStoredUserId() {
+  const raw = localStorage.getItem("auth_user");
+  if (!raw) return null;
+  try {
+    const user = JSON.parse(raw);
+    return user?.id ?? user?.userId ?? null;
+  } catch {
+    return null;
   }
-  const userId = user?.id ?? user?.userId;
+}
+
+export async function createPayment(courseId: string, paymentMethod: PaymentMethod): Promise<CreatePaymentResult> {
+  if (USE_MOCK) {
+    const result = addMockPaidEnrollment(courseId, paymentMethod);
+    return {
+      orderId: result.payment?.id || result.enrollment.id,
+      courseId,
+      status: "PAID",
+    };
+  }
+
+  let userId = getStoredUserId();
   if (!userId) {
-    throw new Error("Backend login chưa trả userId.");
+    const meResponse = await axiosClient.get("/api/auth/me");
+    const me = unwrap<any>(meResponse);
+    userId = me?.id ?? me?.userId;
+    localStorage.setItem("auth_user", JSON.stringify({ ...me, id: userId }));
   }
-  const response = await axiosClient.post(PAYMENT_TRANSACTIONS, {
+  if (!userId) throw new Error("Backend chưa trả userId.");
+
+  const response = await axiosClient.post("/api/payment-transactions", {
     userId: Number(userId),
     orderId: Number(courseId),
     courseId: Number(courseId),
-    paymentMethod: "GATEWAY",
+    paymentMethod,
   });
-  return unwrap<PaymentTransaction>(response);
-}
-
-export async function getPaymentTransaction(id: string | number): Promise<PaymentTransaction> {
-  const response = await axiosClient.get(`${PAYMENT_TRANSACTIONS}/${id}`);
-  return unwrap<PaymentTransaction>(response);
-}
-
-export function savePendingPayment(courseId: string, payment: PaymentTransaction) {
-  const pending: PendingPayment = {
+  const transaction = unwrap<any>(response);
+  const status = String(transaction.status || "PENDING").toUpperCase();
+  const pending = {
     courseId,
-    transactionId: payment.transactionId,
-    transactionRef: payment.transactionRef,
-    status: payment.status,
+    orderId: String(transaction.transactionId ?? transaction.orderId ?? courseId),
+    transactionId: transaction.transactionId,
+    transactionRef: transaction.transactionRef,
     createdAt: new Date().toISOString(),
   };
   localStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(pending));
+  return {
+    paymentUrl: transaction.gatewayUrl,
+    gatewayUrl: transaction.gatewayUrl,
+    orderId: String(transaction.transactionId ?? transaction.orderId ?? courseId),
+    courseId,
+    status: status === "SUCCESS" ? "PAID" : status === "FAILED" ? "FAILED" : "PENDING",
+    transactionId: transaction.transactionId,
+    transactionRef: transaction.transactionRef,
+  };
+}
+
+export async function getPaymentTransaction(id: string | number) {
+  const response = await axiosClient.get(`/api/payment-transactions/${id}`);
+  return unwrap<any>(response);
 }
 
 export function getPendingPayment(): PendingPayment | null {

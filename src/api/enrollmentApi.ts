@@ -23,7 +23,7 @@ function normalizeEnrollment(raw: any): Enrollment {
   return {
     id: String(raw?.enrollmentId ?? raw?.id),
     courseId: String(raw?.courseId),
-    courseTitle: raw?.courseTitle || `Khoa hoc #${raw?.courseId}`,
+    courseTitle: raw?.courseTitle || `Khóa học #${raw?.courseId}`,
     studentName: raw?.studentName || `User #${raw?.userId}`,
     studentEmail: raw?.studentEmail || "",
     status,
@@ -42,12 +42,19 @@ function normalizeMyEnrollmentCourse(raw: any): Course {
   });
 }
 
+async function getMyEnrollment(courseId: string) {
+  const response = await axiosClient.get(ENROLLMENTS_ME);
+  const enrollment = unwrap<any[]>(response).find(
+    (item) => String(item.courseId) === String(courseId) && String(item.status || "").toUpperCase() !== "REJECTED",
+  );
+  if (!enrollment) throw new Error("Bạn chưa đăng ký khóa học này.");
+  return enrollment;
+}
+
 export async function enrollCourse(courseId: string) {
   if (USE_MOCK) return addMockEnrollment(courseId);
   const userId = getStoredUserId();
-  if (!userId) {
-    throw new Error("Backend login chua tra userId.");
-  }
+  if (!userId) throw new Error("Backend chưa trả userId.");
   const response = await axiosClient.post(ENROLLMENTS, { userId: Number(userId), courseId: Number(courseId) });
   return unwrap(response);
 }
@@ -61,20 +68,14 @@ export async function getMyCourses(): Promise<Course[]> {
 export async function checkMyEnrollment(courseId: string): Promise<boolean> {
   if (USE_MOCK) return isMockCourseEnrolled(courseId);
   const response = await axiosClient.get(ENROLLMENTS_ME);
-  return unwrap<any[]>(response).some((item) => String(item.courseId) === String(courseId) && String(item.status || "").toUpperCase() !== "REJECTED");
-}
-
-async function getMyEnrollment(courseId: string) {
-  const response = await axiosClient.get(ENROLLMENTS_ME);
-  const enrollment = unwrap<any[]>(response).find(
+  return unwrap<any[]>(response).some(
     (item) => String(item.courseId) === String(courseId) && String(item.status || "").toUpperCase() !== "REJECTED",
   );
-  if (!enrollment) throw new Error("Bạn chưa đăng ký khóa học này.");
-  return enrollment;
 }
 
 export async function updateProgress(courseId: string, lessonId: string) {
   if (USE_MOCK) return { courseId, lessonId, progress: 75 };
+
   const enrollment = await getMyEnrollment(courseId);
   const enrollmentId = enrollment.enrollmentId ?? enrollment.id;
   const progressResponse = await axiosClient.get(`${LEARNING_PROGRESS}/enrollment/${enrollmentId}`);
@@ -91,16 +92,6 @@ export async function updateProgress(courseId: string, lessonId: string) {
     isCompleted: true,
   });
   return unwrap(response);
-}
-
-export async function getCourseProgress(courseId: string): Promise<string[]> {
-  if (USE_MOCK) return [];
-  const enrollment = await getMyEnrollment(courseId);
-  const enrollmentId = enrollment.enrollmentId ?? enrollment.id;
-  const response = await axiosClient.get(`${LEARNING_PROGRESS}/enrollment/${enrollmentId}`);
-  return unwrap<any[]>(response)
-    .filter((item) => Boolean(item.isCompleted))
-    .map((item) => String(item.lessonId));
 }
 
 export async function getEnrollments(): Promise<Enrollment[]> {

@@ -1,18 +1,22 @@
-export type UserRole = "student" | "instructor" | "admin" | "STUDENT" | "INSTRUCTOR" | "ADMIN";
+export type FrontendRole = "student" | "instructor" | "admin";
+export type BackendRole = "STUDENT" | "TEACHER" | "INSTRUCTOR" | "ADMIN" | "USER";
+export type ApiRole = BackendRole;
+export type UserRole = FrontendRole | BackendRole;
 
 export interface AuthUser {
   id?: string | number;
+  userId?: string | number;
   fullName?: string;
   name?: string;
   email?: string;
   username: string;
   role: UserRole | string;
-  status?: string;
   accessToken?: string;
-  refreshToken?: string;
   token?: string;
   tokenType?: string;
   expiresIn?: number;
+  avatar?: string;
+  createdAt?: string;
 }
 
 export interface LoginPayload {
@@ -25,11 +29,10 @@ export interface RegisterPayload {
   email: string;
   username: string;
   password: string;
-  role?: "student" | "instructor";
+  role?: FrontendRole | ApiRole;
 }
 
 export interface LoginResult {
   user: AuthUser;
   token: string;
-  refreshToken?: string;
 }

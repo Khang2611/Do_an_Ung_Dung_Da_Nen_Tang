@@ -10,13 +10,22 @@ function toMinutes(value?: string) {
   return match ? Number(match[0]) : 10;
 }
 
+function asArray<T>(value: T[] | T | null | undefined): T[] {
+  if (Array.isArray(value)) return value;
+  return value == null ? [] : [value];
+}
+
 function normalizeLesson(raw: any): Lesson {
   return {
     id: String(raw?.lessonId ?? raw?.id),
     title: raw?.title || "Bài học",
     duration: raw?.duration ? `${raw.duration} phút` : "10 phút",
     content: raw?.content || "",
+    description: raw?.description || raw?.content || "",
+    isPreview: Boolean(raw?.isPreview),
     videoUrl: raw?.videoUrl || "",
+    hasVideo: Boolean(raw?.hasVideo || raw?.videoUrl),
+    videoStatus: raw?.videoStatus || (raw?.hasVideo || raw?.videoUrl ? "ready" : "missing"),
     type: "video",
   };
 }
@@ -58,17 +67,18 @@ function filterCourses(params?: CourseFilters) {
     const matchSearch = !search || course.title.toLowerCase().includes(search) || course.description.toLowerCase().includes(search);
     const matchCategory = !params?.category || params.category === "Tất cả" || course.category === params.category;
     const matchLevel = !params?.level || params.level === "Tất cả" || course.level === params.level;
-    return matchSearch && matchCategory && matchLevel;
+    const matchPrice = !params?.price || params.price === "all" || (params.price === "free" ? course.price === 0 : course.price > 0);
+    return matchSearch && matchCategory && matchLevel && matchPrice;
   });
 }
 
 async function getBackendChapters(courseId: string): Promise<Chapter[]> {
   const chapterResponse = await axiosClient.get(`${CHAPTERS}/course/${courseId}`);
-  const rawChapters = unwrap<any[]>(chapterResponse);
+  const rawChapters = asArray(unwrap<any[] | any>(chapterResponse));
   return Promise.all(
     rawChapters.map(async (chapter) => {
       const lessonResponse = await axiosClient.get(`${LESSONS}/chapter/${chapter.chapterId}`);
-      const lessons = unwrap<any[]>(lessonResponse).map(normalizeLesson);
+      const lessons = asArray(unwrap<any[] | any>(lessonResponse)).map(normalizeLesson);
       return normalizeChapter(chapter, lessons);
     }),
   );
@@ -111,10 +121,6 @@ export async function createCourse(data: Partial<Course>) {
     description: data.description,
     price: data.price,
     categoryId: (data as any).categoryId,
-    thumbnail: data.thumbnail,
-    level: data.level,
-    status: data.status,
-    instructorName: data.instructorName,
   });
   const course = normalizeCourse(unwrap<any>(courseResponse));
 
@@ -130,7 +136,7 @@ export async function createCourse(data: Partial<Course>) {
         chapterId: createdChapter.chapterId,
         title: lesson.title,
         content: lesson.content,
-        videoUrl: "",
+        videoUrl: lesson.videoUrl || "",
         duration: toMinutes(lesson.duration),
         orderIndex: lessonIndex + 1,
       });
@@ -154,12 +160,19 @@ export async function updateCourse(id: string, data: Partial<Course>) {
     description: data.description,
     price: data.price,
     categoryId: (data as any).categoryId,
-    thumbnail: data.thumbnail,
-    level: data.level,
-    status: data.status,
-    instructorName: data.instructorName,
   });
   return normalizeCourse(unwrap<any>(response), data.chapters);
+}
+
+export async function submitCourseForReview(id: string) {
+  if (USE_MOCK) {
+    const index = mockCourses.findIndex((item) => item.id === id);
+    if (index < 0) throw new Error("Không tìm thấy khóa học.");
+    mockCourses[index] = { ...mockCourses[index], status: "PENDING_REVIEW" };
+    return mockCourses[index];
+  }
+  const response = await axiosClient.patch(`${COURSES}/${id}/submit-review`);
+  return normalizeCourse(unwrap<any>(response));
 }
 
 export async function deleteCourse(id: string) {

@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { BookOpen, CheckCircle2, Clock, PlayCircle, Star, UserRound } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Award, BookOpen, CheckCircle2, Clock, FileText, Globe2, PlayCircle, Star, UserRound, Users } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getCourseById } from "../../api/courseApi";
 import { checkMyEnrollment, enrollCourse } from "../../api/enrollmentApi";
-import { createPayment, savePendingPayment } from "../../api/paymentApi";
+import { createPayment } from "../../api/paymentApi";
 import { Badge } from "../../components/common/Badge";
 import { Button } from "../../components/common/Button";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
@@ -18,107 +18,173 @@ export function CourseDetail() {
   const { isAuthenticated } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
   const [enrolled, setEnrolled] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
   const [enrollError, setEnrollError] = useState("");
-  const [paymentMessage, setPaymentMessage] = useState("");
 
   useEffect(() => {
-    setError("");
-    Promise.all([getCourseById(id), isAuthenticated ? checkMyEnrollment(id) : Promise.resolve(false)])
-      .then(([courseData, enrolledData]) => {
+    async function loadCourse() {
+      try {
+        setLoading(true);
+        setError("");
+        const [courseData, enrolledData] = await Promise.all([getCourseById(id), isAuthenticated ? checkMyEnrollment(id) : Promise.resolve(false)]);
         setCourse(courseData);
         setEnrolled(enrolledData);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Không thể tải chi tiết khóa học."));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Không thể tải chi tiết khóa học.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCourse();
   }, [id, isAuthenticated]);
 
-  if (error) return <div className="mx-auto max-w-4xl px-4 py-8"><ErrorMessage message={error} /></div>;
-  if (!course) return <Loading />;
+  const lessons = useMemo(() => course?.chapters.flatMap((chapter) => chapter.lessons) || [], [course]);
 
-  const enroll = async () => {
-    if (!isAuthenticated) return navigate("/login");
-    setEnrollError("");
-    setPaymentMessage("");
-    try {
-      if (course.price > 0) {
-        const payment = await createPayment(course.id);
-        savePendingPayment(course.id, payment);
-        if (payment.gatewayUrl) {
-          window.location.href = payment.gatewayUrl;
+  if (loading) return <Loading />;
+  if (error) return <div className="mx-auto max-w-4xl px-4 py-8"><ErrorMessage message={error} /></div>;
+  if (!course) return <div className="mx-auto max-w-4xl px-4 py-8"><ErrorMessage message="Không tìm thấy khóa học." /></div>;
+
+  const startCourse = async () => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    if (enrolled) {
+      navigate(`/student/learning/${course.id}`);
+      return;
+    }
+    if (course.price > 0) {
+      setEnrollError("");
+      setActionLoading(true);
+      try {
+        const payment = await createPayment(course.id, "VNPAY");
+        if (payment.paymentUrl || payment.gatewayUrl) {
+          window.location.href = payment.paymentUrl || payment.gatewayUrl || "";
           return;
         }
-        setPaymentMessage(`Giao dịch ${payment.transactionRef} đã được tạo với trạng thái ${payment.status}. Payment gateway chưa trả về URL thanh toán, hãy kiểm tra service ở cổng 8090.`);
-        return;
+        setEnrollError("Payment gateway chưa trả về URL thanh toán. Kiểm tra service cổng 8090.");
+      } catch (err) {
+        setEnrollError(err instanceof Error ? err.message : "Không thể tạo giao dịch thanh toán.");
+      } finally {
+        setActionLoading(false);
       }
+      return;
+    }
+
+    setEnrollError("");
+    setActionLoading(true);
+    try {
       await enrollCourse(course.id);
       setEnrolled(true);
+      navigate(`/student/learning/${course.id}`);
     } catch (err) {
       setEnrollError(err instanceof Error ? err.message : "Không thể đăng ký khóa học.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-        <section>
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <img src={course.thumbnail} alt={course.title} className="h-80 w-full object-cover" />
-            <div className="p-6">
-              <div className="flex flex-wrap gap-2"><Badge variant="indigo">{course.category}</Badge><Badge>{course.level}</Badge></div>
-              <h1 className="mt-4 text-3xl font-bold leading-tight text-slate-950 md:text-4xl">{course.title}</h1>
-              <p className="mt-4 text-base leading-7 text-slate-600">{course.description}</p>
-              <div className="mt-5 grid gap-3 text-sm text-slate-600 sm:grid-cols-2 lg:grid-cols-4">
-                <span className="flex items-center gap-2"><Star size={17} className="fill-amber-400 text-amber-400" />{course.rating} đánh giá</span>
-                <span className="flex items-center gap-2"><Clock size={17} />{course.duration}</span>
-                <span className="flex items-center gap-2"><BookOpen size={17} />{course.totalLessons} bài học</span>
-                <span className="flex items-center gap-2"><UserRound size={17} />{course.instructorName}</span>
-              </div>
+    <div className="bg-slate-50">
+      <section className="bg-slate-950 text-white">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 lg:grid-cols-[1fr_390px] lg:items-start">
+          <div className="py-4">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="indigo">{course.category}</Badge>
+              <Badge>{course.level}</Badge>
+            </div>
+            <h1 className="mt-5 max-w-4xl text-4xl font-extrabold leading-tight md:text-5xl">{course.title}</h1>
+            <p className="mt-5 max-w-3xl text-base leading-7 text-slate-300">{course.description}</p>
+            <div className="mt-6 flex flex-wrap gap-5 text-sm font-semibold text-slate-200">
+              <span className="flex items-center gap-2"><Star size={17} className="fill-amber-400 text-amber-400" />{course.rating} đánh giá</span>
+              <span className="flex items-center gap-2"><Users size={17} />{course.studentsCount.toLocaleString("vi-VN")} học viên</span>
+              <span className="flex items-center gap-2"><UserRound size={17} />{course.instructorName}</span>
+              <span className="flex items-center gap-2"><Clock size={17} />Cập nhật gần đây</span>
             </div>
           </div>
 
-          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-950">Nội dung khóa học</h2>
-            <div className="mt-4 space-y-4">
-              {course.chapters.map((chapter, index) => {
-                const totalMinutes = chapter.lessons.reduce((sum, lesson) => sum + (Number(String(lesson.duration).match(/\d+/)?.[0]) || 0), 0);
-                return (
-                  <div key={chapter.id} className="rounded-2xl border border-slate-200 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <h3 className="font-semibold text-slate-900">Chương {index + 1}: {chapter.title}</h3>
-                      <span className="text-sm text-slate-500">{chapter.lessons.length} bài học - {totalMinutes || "Đang cập nhật"} phút</span>
-                    </div>
-                    <div className="mt-3 divide-y divide-slate-100">
-                      {chapter.lessons.map((lesson) => (
-                        <div key={lesson.id} className="flex items-center justify-between gap-4 py-3 text-sm text-slate-600">
-                          <span className="flex min-w-0 items-center gap-2"><PlayCircle size={16} className="shrink-0 text-indigo-600" />{lesson.title}</span>
-                          <span className="shrink-0">{lesson.duration}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+          <aside className="overflow-hidden rounded-3xl border border-white/10 bg-white text-slate-900 shadow-2xl shadow-slate-950/30">
+            <div className="relative aspect-video bg-slate-100">
+              <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
+              <div className="absolute inset-0 grid place-items-center bg-slate-950/20">
+                <span className="grid h-14 w-14 place-items-center rounded-full bg-white/95 text-indigo-700 shadow-lg"><PlayCircle size={28} /></span>
+              </div>
             </div>
+            <div className="p-5">
+              <div className="text-3xl font-extrabold text-indigo-700">{formatCurrency(course.discountPrice ?? course.price)}</div>
+              {course.discountPrice != null && course.discountPrice < course.price && <div className="mt-1 text-sm font-semibold text-slate-400 line-through">{formatCurrency(course.price)}</div>}
+              {enrollError && <div className="mt-4"><ErrorMessage title="Không thể đăng ký" message={enrollError} /></div>}
+              <Button className="mt-5 h-12 w-full" onClick={startCourse} loading={actionLoading}>
+                {enrolled ? "Tiếp tục học" : course.price > 0 ? "Mua khóa học" : "Đăng ký học miễn phí"}
+              </Button>
+              <div className="mt-5 space-y-3 text-sm font-semibold text-slate-600">
+                <div className="flex items-center gap-2"><CheckCircle2 size={17} className="text-emerald-600" />Truy cập trọn đời</div>
+                <div className="flex items-center gap-2"><Award size={17} className="text-emerald-600" />Có chứng chỉ hoàn thành</div>
+                <div className="flex items-center gap-2"><Globe2 size={17} className="text-emerald-600" />Học trên web/app</div>
+                <div className="flex items-center gap-2"><FileText size={17} className="text-emerald-600" />Tài liệu đi kèm nếu có</div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <main className="mx-auto grid max-w-7xl gap-8 px-4 py-8 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-6">
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-slate-950">Bạn sẽ học được gì</h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {["Nắm chắc nền tảng và quy trình thực hành.", "Làm bài học theo lộ trình có thứ tự.", "Theo dõi tiến độ học trong hệ thống.", "Sẵn sàng áp dụng vào dự án thực tế."].map((item) => (
+                <div key={item} className="flex gap-2 text-sm font-medium text-slate-700">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  {item}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-xl font-bold text-slate-950">Nội dung khóa học</h2>
+              <span className="text-sm font-semibold text-slate-500">{course.chapters.length} chương · {lessons.length} bài học · {course.duration}</span>
+            </div>
+            <div className="mt-5 space-y-4">
+              {course.chapters.map((chapter, index) => (
+                <div key={chapter.id} className="rounded-2xl border border-slate-200 p-4">
+                  <h3 className="font-bold text-slate-900">Chương {index + 1}: {chapter.title}</h3>
+                  <div className="mt-3 divide-y divide-slate-100">
+                    {chapter.lessons.map((lesson) => (
+                      <div key={lesson.id} className="flex items-center justify-between gap-4 py-3 text-sm text-slate-600">
+                        <span className="flex min-w-0 items-center gap-2 font-medium"><PlayCircle size={16} className="shrink-0 text-indigo-600" />{lesson.title}</span>
+                        <span className="shrink-0">{lesson.duration}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-slate-950">Mô tả chi tiết</h2>
+            <p className="mt-3 leading-7 text-slate-600">{course.description}</p>
+          </section>
+        </div>
+
+        <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
+          <h3 className="font-bold text-slate-950">Thông tin khóa học</h3>
+          <div className="mt-4 space-y-3 text-sm text-slate-600">
+            <div className="flex items-center justify-between"><span>Giảng viên</span><strong className="text-right text-slate-950">{course.instructorName}</strong></div>
+            <div className="flex items-center justify-between"><span>Bài học</span><strong className="text-slate-950">{course.totalLessons}</strong></div>
+            <div className="flex items-center justify-between"><span>Thời lượng</span><strong className="text-slate-950">{course.duration}</strong></div>
+            <div className="flex items-center justify-between"><span>Học viên</span><strong className="text-slate-950">{course.studentsCount.toLocaleString("vi-VN")}</strong></div>
           </div>
-        </section>
-        <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
-          <div className="rounded-2xl bg-indigo-50 p-5">
-            <div className="text-sm font-medium text-indigo-700">Học phí</div>
-            <div className="mt-1 text-3xl font-bold text-indigo-700">{formatCurrency(course.price)}</div>
-          </div>
-          <div className="mt-5 space-y-3 text-sm text-slate-600">
-            <div className="flex items-center justify-between"><span>Giảng viên</span><strong className="text-slate-900">{course.instructorName}</strong></div>
-            <div className="flex items-center justify-between"><span>Bài học</span><strong className="text-slate-900">{course.totalLessons}</strong></div>
-            <div className="flex items-center justify-between"><span>Học viên</span><strong className="text-slate-900">{course.studentsCount.toLocaleString("vi-VN")}</strong></div>
-          </div>
-          {enrollError && <div className="mt-4"><ErrorMessage title="Đăng ký thất bại" message={enrollError} /></div>}
-          {paymentMessage && <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{paymentMessage}</div>}
-          <div className="mt-5 space-y-3">
-            {enrolled ? <Link to={`/student/learning/${course.id}`}><Button className="w-full"><CheckCircle2 size={18} />Vào học</Button></Link> : <Button className="w-full" onClick={enroll}>{course.price > 0 ? "Thanh toán khóa học" : "Đăng ký khóa học"}</Button>}
-            <Link to="/courses"><Button variant="secondary" className="w-full">Quay lại danh sách</Button></Link>
-          </div>
+          <Link to="/courses" className="mt-5 block">
+            <Button variant="secondary" className="w-full">Quay lại danh sách</Button>
+          </Link>
         </aside>
-      </div>
+      </main>
     </div>
   );
 }

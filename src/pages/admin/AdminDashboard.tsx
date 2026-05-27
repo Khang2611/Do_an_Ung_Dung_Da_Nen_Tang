@@ -36,7 +36,7 @@ export function AdminDashboard() {
 
   return (
     <div>
-      <PageHeader title="Dashboard quản trị" description="Tổng quan người dùng, khóa học, đăng ký và doanh thu demo." />
+      <PageHeader title="Dashboard quản trị" description="Tổng quan người dùng, khóa học, đăng ký và doanh thu." />
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard label="Người dùng" value={users.length} icon={<Users size={20} />} />
         <StatCard label="Khóa học" value={courses.length} icon={<BookOpen size={20} />} tone="sky" />

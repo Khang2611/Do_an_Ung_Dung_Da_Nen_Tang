@@ -1,17 +1,20 @@
 import axiosClient, { USE_MOCK, unwrap } from "./axiosClient";
 import { USERS } from "./endpoints";
 import { mockUsers } from "../data/mockData";
+import type { FrontendRole } from "../types/auth";
 import type { User } from "../types/user";
+import { normalizeRole, normalizeStatus, toApiRole, toApiStatus } from "../utils/format";
 
 function normalizeUser(raw: any): User {
   return {
     id: String(raw?.userId ?? raw?.id),
-    fullName: raw?.fullName || raw?.username || "Nguoi dung",
+    fullName: raw?.fullName || raw?.username || "Người dùng",
     email: raw?.email || "",
     username: raw?.username || raw?.email || "",
-    role: raw?.role || "USER",
-    status: raw?.status || "active",
+    role: normalizeRole(raw?.role || "USER"),
+    status: normalizeStatus(raw?.status || "active"),
     createdAt: raw?.createdDate || raw?.createdAt || "",
+    avatar: raw?.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80`,
   };
 }
 
@@ -24,19 +27,67 @@ export async function getUsers(): Promise<User[]> {
 export async function updateUser(id: string, data: Partial<User>) {
   if (USE_MOCK) {
     const index = mockUsers.findIndex((item) => item.id === id);
-    if (index < 0) throw new Error("Khong tim thay nguoi dung.");
+    if (index < 0) throw new Error("Không tìm thấy người dùng.");
     mockUsers[index] = { ...mockUsers[index], ...data };
     return mockUsers[index];
   }
+  
   if (data.role) {
-    const response = await axiosClient.patch(`${USERS}/${id}/role`, { role: data.role });
-    return normalizeUser(unwrap<any>(response));
+    // If backend uses /api/admin/users/{id}/role or /api/users/{id}/role
+    const rolePayload = toApiRole(data.role);
+    try {
+      const response = await axiosClient.patch(`/api/admin/users/${id}/role`, { role: rolePayload });
+      return normalizeUser(unwrap<any>(response));
+    } catch {
+      // Fallback endpoint if admin prefix is not configured
+      const response = await axiosClient.patch(`${USERS}/${id}/role`, { role: rolePayload });
+      return normalizeUser(unwrap<any>(response));
+    }
   }
+
   if (data.status) {
-    const response = await axiosClient.patch(`${USERS}/${id}/status`, { status: data.status });
+    const statusPayload = toApiStatus(data.status);
+    try {
+      const response = await axiosClient.patch(`/api/admin/users/${id}/status`, { status: statusPayload });
+      return normalizeUser(unwrap<any>(response));
+    } catch {
+      // Fallback
+      const response = await axiosClient.patch(`${USERS}/${id}/status`, { status: statusPayload });
+      return normalizeUser(unwrap<any>(response));
+    }
+  }
+  
+  throw new Error("Chức năng cập nhật không được hỗ trợ.");
+}
+
+export async function updateUserRole(id: string, role: FrontendRole) {
+  const rolePayload = toApiRole(role);
+  if (USE_MOCK) {
+    const index = mockUsers.findIndex((item) => item.id === id);
+    if (index < 0) throw new Error("Không tìm thấy người dùng.");
+    mockUsers[index] = { ...mockUsers[index], role: normalizeRole(role) };
+    return mockUsers[index];
+  }
+
+  const response = await axiosClient.patch(`${USERS}/${id}/role`, { role: rolePayload });
+  return normalizeUser(unwrap<any>(response));
+}
+
+export async function updateUserStatus(id: string, status: "ACTIVE" | "LOCKED") {
+  if (USE_MOCK) {
+    const index = mockUsers.findIndex((item) => item.id === id);
+    if (index < 0) throw new Error("KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng.");
+    mockUsers[index] = { ...mockUsers[index], status: normalizeStatus(status) };
+    return mockUsers[index];
+  }
+
+  try {
+    const response = await axiosClient.patch(`/api/admin/users/${id}/status`, { status });
+    return normalizeUser(unwrap<any>(response));
+  } catch {
+    const response = await axiosClient.patch(`${USERS}/${id}/status`, { status });
     return normalizeUser(unwrap<any>(response));
   }
-  throw new Error("Khong co du lieu cap nhat user.");
 }
 
 export async function deleteUser(id: string) {
@@ -45,5 +96,9 @@ export async function deleteUser(id: string) {
     if (index >= 0) mockUsers.splice(index, 1);
     return;
   }
-  await axiosClient.delete(`${USERS}/${id}`);
+  try {
+    await axiosClient.delete(`/api/admin/users/${id}`);
+  } catch {
+    await axiosClient.delete(`${USERS}/${id}`);
+  }
 }

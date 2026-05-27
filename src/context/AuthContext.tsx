@@ -6,12 +6,13 @@ import { getRoleHome, normalizeRole } from "../utils/format";
 interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;
-  role: string | null;
+  role: ReturnType<typeof normalizeRole> | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (data: LoginPayload) => Promise<string>;
   register: (data: RegisterPayload) => Promise<void>;
-  updateProfile: (data: { fullName?: string; email?: string; password?: string }) => Promise<void>;
+  updateProfile: (data: { fullName?: string; email?: string; avatar?: string; password?: string }) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<void>;
   logout: () => void;
 }
 
@@ -26,8 +27,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedToken = localStorage.getItem("auth_token");
     const storedUser = localStorage.getItem("auth_user");
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        const parsed = JSON.parse(storedUser) as AuthUser;
+        const normalizedUser = { ...parsed, role: normalizeRole(parsed.role) };
+        setToken(storedToken);
+        setUser(normalizedUser);
+        localStorage.setItem("auth_user", JSON.stringify(normalizedUser));
+      } catch {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_user");
+      }
     }
     setIsLoading(false);
 
@@ -41,30 +50,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (data: LoginPayload) => {
     const result = await authApi.login(data);
+    const normalizedUser = { ...result.user, role: normalizeRole(result.user.role) };
     localStorage.setItem("auth_token", result.token);
-    if (result.refreshToken) localStorage.setItem("auth_refresh_token", result.refreshToken);
-    localStorage.setItem("auth_user", JSON.stringify(result.user));
+    localStorage.setItem("auth_user", JSON.stringify(normalizedUser));
     setToken(result.token);
-    setUser(result.user);
-    return getRoleHome(result.user.role);
+    setUser(normalizedUser);
+    return getRoleHome(normalizedUser.role);
   }, []);
 
   const register = useCallback(async (data: RegisterPayload) => {
     await authApi.register(data);
   }, []);
 
-  const updateProfile = useCallback(async (data: { fullName?: string; email?: string; password?: string }) => {
-    const updatedUser = await authApi.updateProfile(data);
-    const nextUser = { ...user, ...updatedUser };
-    localStorage.setItem("auth_user", JSON.stringify(nextUser));
-    setUser(nextUser);
+  const updateProfile = useCallback(async (data: { fullName?: string; email?: string; avatar?: string; password?: string }) => {
+    const updated = await authApi.updateProfile(data);
+    const normalizedUser = { ...user, ...updated, id: updated.id ?? updated.userId ?? user?.id, role: normalizeRole(updated.role || user?.role || "student") } as AuthUser;
+    localStorage.setItem("auth_user", JSON.stringify(normalizedUser));
+    setUser(normalizedUser);
+  }, [user]);
+
+  const uploadAvatar = useCallback(async (file: File) => {
+    const updated = await authApi.uploadAvatar(file);
+    const normalizedUser = { ...user, ...updated, id: updated.id ?? updated.userId ?? user?.id, role: normalizeRole(updated.role || user?.role || "student") } as AuthUser;
+    localStorage.setItem("auth_user", JSON.stringify(normalizedUser));
+    setUser(normalizedUser);
   }, [user]);
 
   const logout = useCallback(() => {
-    const refreshToken = localStorage.getItem("auth_refresh_token") || undefined;
-    void authApi.logout(refreshToken);
     localStorage.removeItem("auth_token");
-    localStorage.removeItem("auth_refresh_token");
     localStorage.removeItem("auth_user");
     setToken(null);
     setUser(null);
@@ -79,8 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     register,
     updateProfile,
+    uploadAvatar,
     logout,
-  }), [user, token, isLoading, login, register, updateProfile, logout]);
+  }), [user, token, isLoading, login, register, updateProfile, uploadAvatar, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
