@@ -9,9 +9,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.khoahoc.entity.Chapter;
 import org.example.khoahoc.entity.Lesson;
+import org.example.khoahoc.entity.User;
+import org.example.khoahoc.enums.Role;
 import org.example.khoahoc.repository.ChapterRepository;
 import org.example.khoahoc.repository.EnrollmentRepository;
 import org.example.khoahoc.repository.LessonRepository;
+import org.example.khoahoc.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +34,7 @@ public class VideoService {
     private final LessonRepository lessonRepository;
     private final ChapterRepository chapterRepository;
     private final EnrollmentRepository enrollmentRepository;
+    private final UserRepository userRepository;
 
     @Value("${minio.bucket-name}")
     private String bucketName;
@@ -140,6 +144,12 @@ public class VideoService {
     }
 
     private void validateEnrollment(Long lessonId, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getRole() == Role.ADMIN || user.getRole() == Role.TEACHER) {
+            return;
+        }
+
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new RuntimeException("Lesson not found"));
         

@@ -26,6 +26,9 @@ public class Course {
     @Column(name = "description", columnDefinition = "TEXT")
     String description;
 
+    @Column(name = "thumbnail", columnDefinition = "LONGTEXT")
+    String thumbnail;
+
     @Column(name = "price")
     Double price;
 

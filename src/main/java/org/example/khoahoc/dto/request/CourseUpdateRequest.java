@@ -11,6 +11,7 @@ import lombok.experimental.FieldDefaults;
 public class CourseUpdateRequest {
     String title;
     String description;
+    String thumbnail;
     Double price;
     Long categoryId;
 }

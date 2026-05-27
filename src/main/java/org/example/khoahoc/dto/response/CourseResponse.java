@@ -13,6 +13,7 @@ public class CourseResponse {
     Long courseId;
     String title;
     String description;
+    String thumbnail;
     Double price;
     LocalDateTime createdDate;
     CategoryResponse category;
