@@ -71,13 +71,20 @@ function LessonFields({
                     lessonId={String(lesson.id)}
                     lessonTitle={lesson.title || `Bài ${lessonIndex + 1}`}
                     initialVideoUrl={field.value}
+                    initialPendingFile={lesson.pendingVideoFile}
                     onUploadSuccess={(url) => {
                       field.onChange(url);
                       setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.hasVideo`, Boolean(url), { shouldDirty: true });
                       setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.videoStatus`, url ? "ready" : "missing", { shouldDirty: true });
                     }}
+                    onPendingFileSelected={(file) => {
+                      setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.pendingVideoFile`, file || undefined, { shouldDirty: true });
+                      setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.hasVideo`, Boolean(file || field.value), { shouldDirty: true });
+                      setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.videoStatus`, file || field.value ? "ready" : "missing", { shouldDirty: true });
+                    }}
                     onClear={() => {
                       field.onChange("");
+                      setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.pendingVideoFile`, undefined, { shouldDirty: true });
                       setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.hasVideo`, false, { shouldDirty: true });
                       setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.videoStatus`, "missing", { shouldDirty: true });
                     }}
@@ -137,7 +144,8 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
               duration: normalizeDuration(lesson.duration),
               description: lesson.description || lesson.content || "",
               videoUrl: lesson.videoUrl || "",
-              hasVideo: Boolean(lesson.hasVideo || lesson.videoStatus === "ready"),
+              pendingVideoFile: lesson.pendingVideoFile,
+              hasVideo: Boolean(lesson.hasVideo || lesson.videoStatus === "ready" || lesson.pendingVideoFile),
               videoStatus: lesson.videoStatus || (lesson.hasVideo ? "ready" : "missing"),
             })),
           }))
@@ -185,8 +193,9 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
             duration: `${Number(lesson.duration || 10)} phút`,
             description: lesson.description || lesson.content || "",
             videoUrl: lesson.videoUrl || "",
-            hasVideo: Boolean(lesson.hasVideo || lesson.videoUrl),
-            videoStatus: lesson.videoUrl ? "ready" : lesson.videoStatus,
+            pendingVideoFile: lesson.pendingVideoFile,
+            hasVideo: Boolean(lesson.hasVideo || lesson.videoUrl || lesson.pendingVideoFile),
+            videoStatus: lesson.videoUrl || lesson.pendingVideoFile ? "ready" : lesson.videoStatus,
           })),
         })),
       });

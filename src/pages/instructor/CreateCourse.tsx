@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { createCourse } from "../../api/courseApi";
+import { uploadLessonVideo } from "../../api/videoApi";
 import { Button } from "../../components/common/Button";
 import { PageHeader } from "../../components/common/PageHeader";
 import { showToast } from "../../components/common/Toast";
@@ -29,7 +30,22 @@ export function CreateCourse() {
             rating: 0,
             studentsCount: 0,
           });
-          showToast("Đã tạo khóa học. Bạn có thể tải video lên từng bài học.", "success");
+
+          const pendingUploads: Promise<unknown>[] = [];
+          value.chapters.forEach((chapter, chapterIndex) => {
+            chapter.lessons.forEach((lesson, lessonIndex) => {
+              const file = lesson.pendingVideoFile;
+              const createdLessonId = created.chapters?.[chapterIndex]?.lessons?.[lessonIndex]?.id;
+              if (file && createdLessonId) pendingUploads.push(uploadLessonVideo(createdLessonId, file));
+            });
+          });
+
+          if (pendingUploads.length) {
+            await Promise.all(pendingUploads);
+            showToast("Đã tạo khóa học và tải video lên thành công.", "success");
+          } else {
+            showToast("Đã tạo khóa học. Bạn có thể tải video lên từng bài học.", "success");
+          }
           navigate(`/instructor/courses/${created.id}/edit`);
         }}
       />

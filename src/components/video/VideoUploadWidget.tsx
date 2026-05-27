@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Film, Loader2, Play, Trash2, UploadCloud, X } from "lucide-react";
 import { uploadLessonVideo } from "../../api/videoApi";
 import { Button } from "../common/Button";
@@ -8,7 +8,9 @@ interface VideoUploadWidgetProps {
   lessonId: string;
   lessonTitle?: string;
   initialVideoUrl?: string;
+  initialPendingFile?: File;
   onUploadSuccess: (videoUrl: string) => void;
+  onPendingFileSelected?: (file: File | null) => void;
   onClear?: () => void;
 }
 
@@ -18,9 +20,11 @@ function getUploadedPath(response: any) {
   return response?.result?.videoUrl || response?.result || response?.data?.videoUrl || response?.data || "";
 }
 
-export function VideoUploadWidget({ lessonId, lessonTitle, initialVideoUrl, onUploadSuccess, onClear }: VideoUploadWidgetProps) {
+export function VideoUploadWidget({ lessonId, lessonTitle, initialVideoUrl, initialPendingFile, onUploadSuccess, onPendingFileSelected, onClear }: VideoUploadWidgetProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [videoUrl, setVideoUrl] = useState(initialVideoUrl || "");
+  const [pendingFile, setPendingFile] = useState<File | null>(initialPendingFile || null);
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -28,18 +32,45 @@ export function VideoUploadWidget({ lessonId, lessonTitle, initialVideoUrl, onUp
   const [previewOpen, setPreviewOpen] = useState(false);
   const isNewLesson = lessonId.startsWith("ls-");
 
-  const handleFile = async (file?: File | null) => {
-    if (!file || uploading || isNewLesson) return;
-    if (file.type !== "video/mp4" && !file.name.toLowerCase().endsWith(".mp4")) {
-      setError("Hệ thống chỉ hỗ trợ định dạng video MP4.");
+  useEffect(() => {
+    if (!pendingFile) {
+      setPendingPreviewUrl("");
       return;
     }
+
+    const objectUrl = URL.createObjectURL(pendingFile);
+    setPendingPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [pendingFile]);
+
+  const validateFile = (file: File) => {
+    if (file.type !== "video/mp4" && !file.name.toLowerCase().endsWith(".mp4")) {
+      return "Hệ thống chỉ hỗ trợ định dạng video MP4.";
+    }
     if (file.size > MAX_SIZE) {
-      setError("Dung lượng video không được vượt quá 500MB.");
+      return "Dung lượng video không được vượt quá 500MB.";
+    }
+    return "";
+  };
+
+  const handleFile = async (file?: File | null) => {
+    if (!file || uploading) return;
+
+    const validationError = validateFile(file);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
     setError("");
+
+    if (isNewLesson) {
+      setPendingFile(file);
+      setVideoUrl("");
+      onPendingFileSelected?.(file);
+      return;
+    }
+
     setProgress(0);
     setUploading(true);
     try {
@@ -47,6 +78,8 @@ export function VideoUploadWidget({ lessonId, lessonTitle, initialVideoUrl, onUp
       const uploadedPath = getUploadedPath(response);
       if (!uploadedPath) throw new Error("Backend chưa trả về đường dẫn video.");
       setVideoUrl(uploadedPath);
+      setPendingFile(null);
+      onPendingFileSelected?.(null);
       onUploadSuccess(uploadedPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Tải lên video thất bại.");
@@ -55,16 +88,16 @@ export function VideoUploadWidget({ lessonId, lessonTitle, initialVideoUrl, onUp
     }
   };
 
-  if (isNewLesson) {
-    return (
-      <div className="mt-3 rounded-xl border border-slate-200 bg-slate-100/80 p-3 text-xs font-medium text-slate-500">
-        Vui lòng lưu thông tin khóa học để kích hoạt chức năng tải lên video bài giảng.
-      </div>
-    );
-  }
+  const clearVideo = () => {
+    setVideoUrl("");
+    setPendingFile(null);
+    onPendingFileSelected?.(null);
+    onClear?.();
+    if (inputRef.current) inputRef.current.value = "";
+  };
 
   return (
-    <div className="mt-3">
+    <div className="mt-2">
       {error && <p className="mb-2 text-xs font-semibold text-rose-600">{error}</p>}
 
       {uploading ? (
@@ -82,38 +115,33 @@ export function VideoUploadWidget({ lessonId, lessonTitle, initialVideoUrl, onUp
             </div>
           </div>
         </div>
-      ) : videoUrl ? (
-        <div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+      ) : videoUrl || pendingFile ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50/40 p-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-100 text-emerald-700">
               <Film size={17} />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-emerald-800">Video bài giảng đã sẵn sàng</p>
-              <p className="mt-0.5 max-w-[260px] truncate font-mono text-[10px] text-slate-500">{videoUrl}</p>
+              <p className="text-xs font-bold text-emerald-800">{pendingFile ? "Video đã chọn, sẽ upload khi lưu khóa học" : "Video bài giảng đã sẵn sàng"}</p>
+              <p className="mt-0.5 max-w-[260px] truncate font-mono text-[10px] text-slate-500">{pendingFile?.name || videoUrl}</p>
             </div>
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="secondary" size="sm" onClick={() => setPreviewOpen(true)}>
               <Play size={13} /> Xem thử
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-rose-600 hover:bg-rose-50"
-              onClick={() => {
-                setVideoUrl("");
-                onClear?.();
-              }}
-            >
+            <Button type="button" variant="secondary" size="sm" onClick={() => inputRef.current?.click()}>
+              <UploadCloud size={13} /> Thay video
+            </Button>
+            <Button type="button" variant="ghost" size="sm" className="text-rose-600 hover:bg-rose-50" onClick={clearVideo}>
               <Trash2 size={14} />
             </Button>
           </div>
+          <input ref={inputRef} type="file" accept="video/mp4" className="hidden" onChange={(event) => void handleFile(event.target.files?.[0])} />
         </div>
       ) : (
         <label
-          className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed p-5 text-center transition ${
+          className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed p-4 text-center transition ${
             dragging ? "border-indigo-400 bg-indigo-50" : "border-slate-300 bg-white hover:bg-slate-50"
           }`}
           onDragOver={(event) => {
@@ -127,9 +155,9 @@ export function VideoUploadWidget({ lessonId, lessonTitle, initialVideoUrl, onUp
             void handleFile(event.dataTransfer.files?.[0]);
           }}
         >
-          <UploadCloud className="mb-1 h-7 w-7 text-indigo-500" />
-          <span className="text-xs font-semibold text-slate-700">Kéo thả hoặc nhấp để tải lên video bài giảng (.mp4)</span>
-          <span className="mt-0.5 text-[10px] text-slate-400">Dung lượng tối đa 500MB</span>
+          <UploadCloud className="mb-1 h-6 w-6 text-indigo-500" />
+          <span className="text-xs font-semibold text-slate-700">Kéo thả hoặc nhấp để tải video (.mp4)</span>
+          <span className="mt-0.5 text-[10px] text-slate-400">Tối đa 500MB</span>
           <input ref={inputRef} type="file" accept="video/mp4" className="hidden" onChange={(event) => void handleFile(event.target.files?.[0])} />
         </label>
       )}
@@ -141,7 +169,11 @@ export function VideoUploadWidget({ lessonId, lessonTitle, initialVideoUrl, onUp
             <button className="absolute right-4 top-4 z-10 rounded-lg bg-white/90 p-1.5 text-slate-500 shadow hover:text-slate-900" onClick={() => setPreviewOpen(false)}>
               <X size={18} />
             </button>
-            <LessonVideoPlayer lessonId={lessonId} videoUrl={videoUrl} title={lessonTitle || "Video bài học"} />
+            {pendingPreviewUrl ? (
+              <video src={pendingPreviewUrl} controls className="aspect-video w-full rounded-xl bg-slate-950" title={lessonTitle || "Video bài học"} />
+            ) : (
+              <LessonVideoPlayer lessonId={lessonId} videoUrl={videoUrl} title={lessonTitle || "Video bài học"} />
+            )}
           </div>
         </div>
       )}

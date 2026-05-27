@@ -11,6 +11,7 @@ export interface Lesson {
   hasVideo?: boolean;
   videoStatus?: "missing" | "processing" | "ready" | "error";
   videoUrl?: string;
+  pendingVideoFile?: File;
 }
 
 export interface Chapter {
