@@ -1,15 +1,15 @@
-import { BookOpen, CheckCircle2, FileText, Image, Plus, Send, Trash2, UploadCloud } from "lucide-react";
+import { BookOpen, CheckCircle2, FileText, Image, Plus, Trash2, UploadCloud } from "lucide-react";
 import { useMemo, useRef } from "react";
 import { Controller, useFieldArray, useForm, useWatch, type Control, type FieldErrors, type UseFormRegister, type UseFormSetValue } from "react-hook-form";
 import type { Chapter, Course } from "../../types/course";
-import { formatCurrency, formatStatus, getStatusBadgeVariant, normalizeCourseStatus } from "../../utils/format";
+import { formatCurrency } from "../../utils/format";
 import { Badge } from "../common/Badge";
 import { Button } from "../common/Button";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Input } from "../common/Input";
 import { VideoUploadWidget } from "../video/VideoUploadWidget";
 
-type CourseFormValue = Pick<Course, "title" | "description" | "category" | "level" | "price" | "thumbnail" | "status" | "chapters">;
+type CourseFormValue = Pick<Course, "title" | "description" | "category" | "level" | "price" | "thumbnail" | "chapters">;
 
 interface Props {
   initialValue?: Partial<Course>;
@@ -134,7 +134,6 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
       level: initialValue?.level || "Cơ bản",
       price: initialValue?.price ?? 0,
       thumbnail: initialValue?.thumbnail || fallbackThumb,
-      status: initialValue?.status || "DRAFT",
       chapters: initialValue?.chapters?.length
         ? initialValue.chapters.map((chapter) => ({
             ...chapter,
@@ -158,7 +157,6 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
   const totalLessons = chapters.reduce((sum, chapter) => sum + (chapter.lessons?.length || 0), 0);
   const totalMinutes = chapters.flatMap((chapter) => chapter.lessons || []).reduce((sum, lesson) => sum + (Number(String(lesson.duration).match(/\d+/)?.[0]) || 0), 0);
   const videoCount = getVideoCount(chapters);
-  const status = normalizeCourseStatus(values.status);
   const checklist = useMemo(
     () => [
       ["Có tên khóa học", Boolean(values.title?.trim())],
@@ -202,11 +200,6 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
     } catch (err) {
       setError("root", { message: err instanceof Error ? err.message : "Không thể lưu khóa học." });
     }
-  };
-
-  const submitWithStatus = (statusValue: Course["status"]) => {
-    setValue("status", statusValue, { shouldDirty: true });
-    void handleSubmit(submit)();
   };
 
   const handleThumbnailFile = (file?: File | null) => {
@@ -319,29 +312,7 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="font-bold text-slate-950">Trạng thái xuất bản</h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-[260px_1fr]">
-            <Controller
-              control={control}
-              name="status"
-              render={({ field }) => (
-                <label>
-                  <span className="mb-1.5 block text-sm font-medium text-slate-700">Trạng thái</span>
-                  <select className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25" {...field}>
-                    <option value="DRAFT">Lưu bản nháp</option>
-                    <option value="PENDING_REVIEW">Gửi chờ duyệt</option>
-                  </select>
-                </label>
-              )}
-            />
-            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Khóa học gửi duyệt sẽ được Admin kiểm tra trước khi xuất bản.</div>
-          </div>
-        </section>
-
         <div className="flex flex-wrap gap-3">
-          <Button type="button" variant="secondary" disabled={isSubmitting} onClick={() => submitWithStatus("DRAFT")}>Lưu bản nháp</Button>
-          <Button type="button" disabled={isSubmitting} onClick={() => submitWithStatus("PENDING_REVIEW")}><Send size={16} /> Gửi duyệt</Button>
           <Button disabled={isSubmitting}>{isSubmitting ? "Đang lưu..." : submitLabel}</Button>
         </div>
       </div>
@@ -351,7 +322,6 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
           <img src={values.thumbnail || fallbackThumb} alt={values.title || "Preview"} className="h-full w-full object-cover" />
         </div>
         <div className="mt-4">
-          <Badge variant={getStatusBadgeVariant(status)}>{formatStatus(status)}</Badge>
           <h3 className="mt-3 line-clamp-2 text-lg font-extrabold text-slate-950">{values.title || "Tên khóa học"}</h3>
           <p className="mt-1 text-sm font-semibold text-slate-500">{values.category || "Danh mục"} · {values.level || "Trình độ"}</p>
           <div className="mt-3 text-2xl font-extrabold text-indigo-700">{formatCurrency(Number(values.price || 0))}</div>
