@@ -1,7 +1,6 @@
 import { X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { createCourse } from "../../api/courseApi";
-import { uploadLessonVideo } from "../../api/videoApi";
 import { Button } from "../../components/common/Button";
 import { PageHeader } from "../../components/common/PageHeader";
 import { showToast } from "../../components/common/Toast";
@@ -13,39 +12,25 @@ export function CreateCourse() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Tạo khóa học"
-        description="Tạo thông tin khóa học trước, sau đó hệ thống sẽ mở màn sửa khóa học để giảng viên tải video lên từng bài học."
-        action={<Link to="/instructor/courses"><Button variant="secondary"><X size={16} />Hủy</Button></Link>}
+        title="Tao khoa hoc"
+        description="Nhap thong tin khoa hoc, bai hoc, video va tai lieu dinh kem."
+        action={<Link to="/instructor/courses"><Button variant="secondary"><X size={16} />Huy</Button></Link>}
       />
       <CourseForm
-        submitLabel="Lưu và tải video"
+        submitLabel="Luu khoa hoc"
         onSubmit={async (value) => {
           const lessons = value.chapters.flatMap((chapter) => chapter.lessons);
           const created = await createCourse({
             ...value,
             lessons,
             totalLessons: lessons.length,
-            duration: "Đang cập nhật",
-            instructorName: "Giảng viên",
+            duration: "Dang cap nhat",
+            instructorName: "Giang vien",
             rating: 0,
             studentsCount: 0,
           });
 
-          const pendingUploads: Promise<unknown>[] = [];
-          value.chapters.forEach((chapter, chapterIndex) => {
-            chapter.lessons.forEach((lesson, lessonIndex) => {
-              const file = lesson.pendingVideoFile;
-              const createdLessonId = created.chapters?.[chapterIndex]?.lessons?.[lessonIndex]?.id;
-              if (file && createdLessonId) pendingUploads.push(uploadLessonVideo(createdLessonId, file));
-            });
-          });
-
-          if (pendingUploads.length) {
-            await Promise.all(pendingUploads);
-            showToast("Đã tạo khóa học và tải video lên thành công.", "success");
-          } else {
-            showToast("Đã tạo khóa học. Bạn có thể tải video lên từng bài học.", "success");
-          }
+          showToast("Da tao khoa hoc va tai tep dinh kem len thanh cong.", "success");
           navigate(`/instructor/courses/${created.id}/edit`);
         }}
       />

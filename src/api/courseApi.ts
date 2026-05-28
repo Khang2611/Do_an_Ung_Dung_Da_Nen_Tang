@@ -1,5 +1,7 @@
 import axiosClient, { USE_MOCK, unwrap } from "./axiosClient";
 import { CHAPTERS, COURSES, LESSONS } from "./endpoints";
+import { getLessonResources, uploadLessonResource } from "./resourceApi";
+import { uploadLessonVideo } from "./videoApi";
 import { mockCourses } from "../data/mockData";
 import type { Chapter, Course, CourseFilters, Lesson } from "../types/course";
 
@@ -30,6 +32,8 @@ function normalizeLesson(raw: any): Lesson {
     videoUrl: raw?.videoUrl || "",
     hasVideo: Boolean(raw?.hasVideo || raw?.videoUrl),
     videoStatus: raw?.videoStatus || (raw?.hasVideo || raw?.videoUrl ? "ready" : "missing"),
+    resources: raw?.resources || [],
+    pendingResourceFiles: raw?.pendingResourceFiles || [],
     type: "video",
   };
 }
@@ -83,7 +87,13 @@ async function getBackendChapters(courseId: string): Promise<Chapter[]> {
     rawChapters.map(async (chapter) => {
       const chapterId = String(chapter.chapterId ?? chapter.id);
       const lessonResponse = await axiosClient.get(`${LESSONS}/chapter/${chapterId}`);
-      const lessons = asArray(unwrap<any[] | any>(lessonResponse)).map(normalizeLesson);
+      const lessons = await Promise.all(
+        asArray(unwrap<any[] | any>(lessonResponse)).map(async (lesson) => {
+          const normalized = normalizeLesson(lesson);
+          normalized.resources = await getLessonResources(normalized.id);
+          return normalized;
+        }),
+      );
       return normalizeChapter(chapter, lessons);
     }),
   );
@@ -144,6 +154,18 @@ async function syncCourseContent(courseId: string, chapters: Chapter[] = []) {
       const savedLesson = isPersistedId(lesson.id, "ls-")
         ? await updateBackendLesson(lesson, lessonIndex + 1)
         : await createBackendLesson(savedChapter.id, lesson, lessonIndex + 1);
+      if (lesson.pendingVideoFile) {
+        const videoResponse = await uploadLessonVideo(savedLesson.id, lesson.pendingVideoFile);
+        savedLesson.videoUrl = videoResponse?.result?.videoUrl || videoResponse?.result || videoResponse?.data?.videoUrl || videoResponse?.data || savedLesson.videoUrl;
+        savedLesson.hasVideo = Boolean(savedLesson.videoUrl);
+        savedLesson.videoStatus = savedLesson.videoUrl ? "ready" : savedLesson.videoStatus;
+      }
+      if (lesson.pendingResourceFiles?.length) {
+        const uploadedResources = await Promise.all(lesson.pendingResourceFiles.map((file) => uploadLessonResource(savedLesson.id, file)));
+        savedLesson.resources = [...(savedLesson.resources || []), ...uploadedResources];
+      } else {
+        savedLesson.resources = await getLessonResources(savedLesson.id);
+      }
       syncedLessons.push(savedLesson);
     }
 

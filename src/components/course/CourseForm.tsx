@@ -8,6 +8,7 @@ import { Button } from "../common/Button";
 import { ErrorMessage } from "../common/ErrorMessage";
 import { Input } from "../common/Input";
 import { VideoUploadWidget } from "../video/VideoUploadWidget";
+import { ResourceUploadWidget } from "./ResourceUploadWidget";
 
 type CourseFormValue = Pick<Course, "title" | "description" | "category" | "level" | "price" | "thumbnail" | "chapters">;
 
@@ -19,7 +20,7 @@ interface Props {
 
 const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80";
 const MAX_THUMBNAIL_SIZE = 3 * 1024 * 1024;
-const defaultLesson = () => ({ id: `ls-${Date.now()}-${Math.random()}`, title: "", duration: "10", content: "", description: "", isPreview: false, hasVideo: false, videoStatus: "missing" as const, videoUrl: "" });
+const defaultLesson = () => ({ id: `ls-${Date.now()}-${Math.random()}`, title: "", duration: "10", content: "", description: "", isPreview: false, hasVideo: false, videoStatus: "missing" as const, videoUrl: "", resources: [], pendingResourceFiles: [] });
 const defaultChapter = (): Chapter => ({ id: `ch-${Date.now()}-${Math.random()}`, title: "", lessons: [defaultLesson()] });
 
 function normalizeDuration(duration?: string) {
@@ -103,6 +104,19 @@ function LessonFields({
             placeholder="Mô tả ngắn hoặc nội dung bài học"
             {...register(`chapters.${chapterIndex}.lessons.${lessonIndex}.content`)}
           />
+          <Controller
+            control={control}
+            name={`chapters.${chapterIndex}.lessons.${lessonIndex}.resources`}
+            render={({ field }) => (
+              <ResourceUploadWidget
+                lessonId={String(lesson.id)}
+                resources={field.value || []}
+                pendingFiles={lesson.pendingResourceFiles || []}
+                onResourcesChange={(resources) => field.onChange(resources)}
+                onPendingFilesChange={(files) => setValue(`chapters.${chapterIndex}.lessons.${lessonIndex}.pendingResourceFiles`, files, { shouldDirty: true })}
+              />
+            )}
+          />
           <label className="mt-3 flex items-center gap-2 text-sm font-semibold text-slate-600">
             <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" {...register(`chapters.${chapterIndex}.lessons.${lessonIndex}.isPreview`)} />
             Cho phép học thử miễn phí
@@ -144,6 +158,8 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
               description: lesson.description || lesson.content || "",
               videoUrl: lesson.videoUrl || "",
               pendingVideoFile: lesson.pendingVideoFile,
+              resources: lesson.resources || [],
+              pendingResourceFiles: lesson.pendingResourceFiles || [],
               hasVideo: Boolean(lesson.hasVideo || lesson.videoStatus === "ready" || lesson.pendingVideoFile),
               videoStatus: lesson.videoStatus || (lesson.hasVideo ? "ready" : "missing"),
             })),
@@ -192,6 +208,8 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
             description: lesson.description || lesson.content || "",
             videoUrl: lesson.videoUrl || "",
             pendingVideoFile: lesson.pendingVideoFile,
+            resources: lesson.resources || [],
+            pendingResourceFiles: lesson.pendingResourceFiles || [],
             hasVideo: Boolean(lesson.hasVideo || lesson.videoUrl || lesson.pendingVideoFile),
             videoStatus: lesson.videoUrl || lesson.pendingVideoFile ? "ready" : lesson.videoStatus,
           })),

@@ -12,6 +12,17 @@ export interface Lesson {
   videoStatus?: "missing" | "processing" | "ready" | "error";
   videoUrl?: string;
   pendingVideoFile?: File;
+  resources?: LessonResource[];
+  pendingResourceFiles?: File[];
+}
+
+export interface LessonResource {
+  id: string;
+  lessonId: string;
+  name: string;
+  url: string;
+  type?: string;
+  createdDate?: string;
 }
 
 export interface Chapter {

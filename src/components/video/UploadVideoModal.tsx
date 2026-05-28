@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Play, Upload, X } from "lucide-react";
-import { USE_MOCK } from "../../api/axiosClient";
 import { uploadLessonVideo } from "../../api/videoApi";
 import { Button } from "../common/Button";
 import { showToast } from "../common/Toast";
@@ -59,7 +58,7 @@ export function UploadVideoModal({ lessonId, lessonTitle, isOpen, onClose, onUpl
     setProgress(0);
     setError("");
     try {
-      if (USE_MOCK) {
+      if (false) {
         for (let value = 10; value <= 100; value += 15) {
           await new Promise((resolve) => window.setTimeout(resolve, 120));
           setProgress(Math.min(value, 100));
