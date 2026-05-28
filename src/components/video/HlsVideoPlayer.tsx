@@ -74,10 +74,8 @@ export function HlsVideoPlayer({
     }
 
     const hls = new Hls({
-      xhrSetup: (xhr, url) => {
-        if (url.includes("/api/videos/")) {
-          xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-        }
+      xhrSetup: (xhr) => {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       },
     });
 
