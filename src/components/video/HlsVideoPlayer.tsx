@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import { AlertCircle, Loader2, LogIn, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../../api/axiosClient";
 import { getVideoPlaylistUrl } from "../../api/videoApi";
 import { Button } from "../common/Button";
 
@@ -73,9 +74,13 @@ export function HlsVideoPlayer({
       return;
     }
 
+    const apiOrigin = new URL(API_BASE_URL).origin;
     const hls = new Hls({
-      xhrSetup: (xhr) => {
-        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhrSetup: (xhr, url) => {
+        const requestUrl = new URL(url, window.location.href);
+        if (requestUrl.origin === apiOrigin && requestUrl.pathname.startsWith("/api/videos/")) {
+          xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+        }
       },
     });
 
