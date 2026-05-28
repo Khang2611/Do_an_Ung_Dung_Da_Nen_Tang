@@ -23,6 +23,8 @@ import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,7 +44,7 @@ public class PaymentTransactionService {
     @Value("${payment.gateway.url:http://localhost:8090}")
     String paymentGatewayUrl;
 
-    @Value("${payment.gateway.return-url:http://localhost:8080/payment/return}")
+    @Value("${payment.gateway.return-url:http://localhost:5173/payment/return}")
     String returnUrl;
 
     @Value("${payment.webhook.callback-url:http://localhost:8080/api/webhook/payment}")
@@ -95,13 +97,14 @@ public class PaymentTransactionService {
         // 5. Gọi Gateway API để khởi tạo phiên thanh toán
         try {
             BigDecimal amount = BigDecimal.valueOf(coursePrice).setScale(2, RoundingMode.HALF_UP);
+            String transactionReturnUrl = appendReturnParams(returnUrl, request.getCourseId(), transaction.getTransactionId(), transactionRef);
 
             // Build payload theo đúng thứ tự mà Gateway verify (khớp với GatewayPaymentController.buildPayload)
             String payload = transactionRef + "|" +
                     transaction.getOrderId() + "|" +
                     transaction.getUserId() + "|" +
                     amount.toPlainString() + "|" +
-                    returnUrl + "|" +
+                    transactionReturnUrl + "|" +
                     ipnUrl + "|" +
                     timestamp + "|" +
                     nonce;
@@ -112,7 +115,7 @@ public class PaymentTransactionService {
                     .orderId(transaction.getOrderId())
                     .userId(transaction.getUserId())
                     .amount(amount)
-                    .returnUrl(returnUrl)
+                    .returnUrl(transactionReturnUrl)
                     .ipnUrl(ipnUrl)
                     .timestamp(timestamp)
                     .nonce(nonce)
@@ -140,6 +143,18 @@ public class PaymentTransactionService {
         }
 
         return response;
+    }
+
+    private String appendReturnParams(String baseUrl, Long courseId, Long transactionId, String transactionRef) {
+        String separator = baseUrl.contains("?") ? "&" : "?";
+        return baseUrl + separator +
+                "courseId=" + encode(String.valueOf(courseId)) +
+                "&transactionId=" + encode(String.valueOf(transactionId)) +
+                "&transactionRef=" + encode(transactionRef);
+    }
+
+    private String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     public PaymentTransactionResponse getTransaction(Long id) {
