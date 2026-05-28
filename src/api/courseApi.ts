@@ -236,8 +236,8 @@ export async function createCourse(data: Partial<Course>) {
     categoryId: (data as any).categoryId,
   });
   const course = normalizeCourse(unwrap<any>(response));
-  await syncCourseContent(course.id, data.chapters || []);
-  return getCourseById(course.id);
+  const chapters = await syncCourseContent(course.id, data.chapters || []);
+  return normalizeCourse({ ...course, totalLessons: chapters.flatMap((chapter) => chapter.lessons).length }, chapters);
 }
 
 export async function updateCourse(id: string, data: Partial<Course>) {
