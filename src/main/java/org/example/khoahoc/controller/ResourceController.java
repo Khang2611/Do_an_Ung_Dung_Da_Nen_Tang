@@ -8,10 +8,23 @@ import org.example.khoahoc.dto.request.ResourceUpdateRequest;
 import org.example.khoahoc.dto.response.ApiResponse;
 import org.example.khoahoc.dto.response.ResourceResponse;
 import org.example.khoahoc.service.ResourceService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -22,18 +35,28 @@ public class ResourceController {
 
     ResourceService resourceService;
 
-    // ADMIN và TEACHER mới được thêm tài liệu
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<ResourceResponse>> createResource(@RequestBody ResourceCreationRequest request) {
         ApiResponse<ResourceResponse> response = new ApiResponse<>();
         response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
-        response.setMessage("Tạo tài liệu thành công.");
+        response.setMessage("Tao tai lieu thanh cong.");
         response.setResult(resourceService.createResource(request));
         return ResponseEntity.ok(response);
     }
 
-    // Tất cả người dùng đã đăng nhập đều xem được tài liệu
+    @PostMapping(value = "/upload/{lessonId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<ResourceResponse>> uploadResource(
+            @PathVariable Long lessonId,
+            @RequestParam("file") MultipartFile file) {
+        ApiResponse<ResourceResponse> response = new ApiResponse<>();
+        response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
+        response.setMessage("Tai len tai lieu thanh cong.");
+        response.setResult(resourceService.uploadResource(lessonId, file));
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping
     @PreAuthorize("permitAll()")
     public ResponseEntity<ApiResponse<List<ResourceResponse>>> getAllResources() {
@@ -64,10 +87,19 @@ public class ResourceController {
         return ResponseEntity.ok(response);
     }
 
-    // ADMIN và TEACHER mới được sửa/xóa tài liệu
+    @GetMapping("/{id}/download")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<Void> downloadResource(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header(HttpHeaders.LOCATION, URI.create(resourceService.getSignedDownloadUrl(id)).toString())
+                .build();
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponse<ResourceResponse>> updateResource(@PathVariable Long id, @RequestBody ResourceUpdateRequest request) {
+    public ResponseEntity<ApiResponse<ResourceResponse>> updateResource(
+            @PathVariable Long id,
+            @RequestBody ResourceUpdateRequest request) {
         ApiResponse<ResourceResponse> response = new ApiResponse<>();
         response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
         response.setMessage(org.example.khoahoc.exception.ErrorCode.SUCCESS.getMessage());
@@ -81,7 +113,7 @@ public class ResourceController {
         resourceService.deleteResource(id);
         ApiResponse<Void> response = new ApiResponse<>();
         response.setCode(org.example.khoahoc.exception.ErrorCode.SUCCESS.getCode());
-        response.setMessage("Xóa tài liệu thành công.");
+        response.setMessage("Xoa tai lieu thanh cong.");
         return ResponseEntity.ok(response);
     }
 }
