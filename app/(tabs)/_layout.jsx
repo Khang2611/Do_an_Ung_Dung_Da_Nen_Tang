@@ -1,17 +1,27 @@
 import { Tabs } from 'expo-router';
 import { COLORS } from '../../constants/theme';
 import { Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TAB_ICON = { index: '🏠', explore: '🔍', 'my-learning': '📚', profile: '👤' };
 const TAB_LABEL = { index: 'Trang chủ', explore: 'Khám phá', 'my-learning': 'Học của tôi', profile: 'Hồ sơ' };
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = insets.bottom > 0 ? insets.bottom : 8;
+ 
   return (
     <Tabs screenOptions={({ route }) => ({
       headerShown: false,
       tabBarActiveTintColor: COLORS.primary,
       tabBarInactiveTintColor: COLORS.textMuted,
-      tabBarStyle: { borderTopWidth: 1, borderTopColor: COLORS.border, paddingBottom: 6, paddingTop: 6, height: 60 },
+      tabBarStyle: {
+        borderTopWidth: 1,
+        borderTopColor: COLORS.border,
+        paddingBottom: bottomPadding,
+        paddingTop: 6,
+        height: 54 + bottomPadding,
+      },
       tabBarLabel: TAB_LABEL[route.name] || route.name,
       tabBarIcon: ({ color }) => <TabIcon name={route.name} color={color} />,
     })}>

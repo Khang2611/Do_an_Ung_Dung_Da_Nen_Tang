@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -11,16 +11,43 @@ import {
   SafeAreaView,
   Linking,
   Platform,
+  AppState,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { getCourse } from "../../services/courseService";
+import { getChaptersByCourse } from "../../services/chapterService";
+import { getLessonsByChapter } from "../../services/lessonService";
 import {
   getMyEnrollments,
   createEnrollment,
 } from "../../services/enrollmentService";
-import { createPaymentTransaction } from "../../services/paymentService";
+import { createPaymentTransaction, getPaymentTransaction } from "../../services/paymentService";
 import { COURSES } from "../../constants/mockData";
 import { COLORS, RADIUS, SHADOW } from "../../constants/theme";
+
+async function loadCourseWithChapters(courseId) {
+  const courseData = await getCourse(courseId);
+  const chapters = await getChaptersByCourse(courseData.courseId || courseData.id || courseId);
+  const chaptersWithLessons = await Promise.all(
+    (chapters || [])
+      .slice()
+      .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+      .map(async (chapter) => {
+        const lessons = await getLessonsByChapter(chapter.chapterId || chapter.id);
+        return {
+          ...chapter,
+          lessons: (lessons || [])
+            .slice()
+            .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0)),
+        };
+      }),
+  );
+
+  return {
+    ...courseData,
+    chapters: chaptersWithLessons,
+  };
+}
 
 export default function CourseDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -29,16 +56,66 @@ export default function CourseDetailScreen() {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState({});
+  const [checkingPayment, setCheckingPayment] = useState(false);
+
+  const pollingRef = useRef(null);       // interval ID
+  const pendingTxnId = useRef(null);     // transaction ID đang chờ
+  const appStateRef = useRef(AppState.currentState);
+
+  // Dừng polling
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+    setCheckingPayment(false);
+  }, []);
+
+  // Bắt đầu polling mỗi 3 giây
+  const startPolling = useCallback((txnId) => {
+    pendingTxnId.current = txnId;
+    setCheckingPayment(true);
+
+    pollingRef.current = setInterval(async () => {
+      try {
+        const txn = await getPaymentTransaction(txnId);
+        console.log('Trạng thái giao dịch:', txn);
+
+        if (txn?.status === 'SUCCESS') {
+          stopPolling();
+          try {
+            await createEnrollment({ courseId: Number(id) });
+          } catch (e) {
+            // Webhook có thể đã tạo rồi, bỏ qua lỗi duplicate
+          }
+          setIsEnrolled(true);
+          Alert.alert('✅ Thanh toán thành công!', 'Khóa học đã được mở khóa. Chúc bạn học tốt!');
+        } else if (txn?.status === 'FAILED' || txn?.status === 'CANCELLED') {
+          stopPolling();
+          Alert.alert('❌ Thanh toán thất bại', 'Giao dịch không thành công. Vui lòng thử lại.');
+        }
+        // PENDING → tiếp tục polling
+      } catch (err) {
+        console.warn('Lỗi kiểm tra giao dịch:', err);
+      }
+    }, 3000); // kiểm tra mỗi 3 giây
+  }, [id, stopPolling]);
+
+  // Dừng polling khi rời màn hình
+  useEffect(() => {
+    return () => stopPolling();
+  }, [stopPolling]);
 
   useEffect(() => {
     if (!id || id === "undefined") return;
 
     setLoading(true);
-    Promise.all([getCourse(id), getMyEnrollments()])
+    Promise.all([loadCourseWithChapters(id), getMyEnrollments()])
       .then(([courseData, enrollments]) => {
+        const courseId = Number(Array.isArray(id) ? id[0] : id);
         setCourse(courseData);
         setIsEnrolled(
-          (enrollments ?? []).some((e) => e.courseId === Number(id)),
+          (enrollments ?? []).some((e) => Number(e.courseId) === courseId),
         );
       })
       .catch((err) => {
@@ -70,11 +147,17 @@ export default function CourseDetailScreen() {
   }, []);
 
   const handleEnroll = useCallback(async () => {
-    if (isEnrolled && course?.chapters?.[0]?.lessons?.[0]) {
-      const targetId =
-        course.chapters[0].lessons[0].lessonId ||
-        course.chapters[0].lessons[0].id;
-      return router.push(`/lesson/${targetId}`);
+    if (isEnrolled) {
+      const firstLesson = (course?.chapters || [])
+        .flatMap((chapter) => chapter.lessons || [])
+        .find(Boolean);
+      const targetId = firstLesson?.lessonId || firstLesson?.id;
+
+      if (targetId) {
+        return router.push(`/lesson/${targetId}`);
+      }
+
+      return router.replace(`/course/${course?.courseId || course?.id || id}`);
     }
 
     const priceLabel =
@@ -123,10 +206,16 @@ export default function CourseDetailScreen() {
         if (res && res.gatewayUrl) {
           console.log("Chuyển hướng tới:", res.gatewayUrl);
           if (isWeb) {
-            // Dùng window.location.href thay vì Linking.openURL để tránh popup blocker
             window.location.href = res.gatewayUrl;
           } else {
-            Linking.openURL(res.gatewayUrl);
+            await Linking.openURL(res.gatewayUrl);
+            // Bắt đầu polling sau khi mở trình duyệt
+            const txnId = res.transactionId || res.id;
+            if (txnId) {
+              startPolling(txnId);
+            } else {
+              console.warn('Không tìm thấy transactionId trong response:', res);
+            }
           }
         } else {
           const msg = "Không lấy được đường dẫn thanh toán. Vui lòng thử lại.";
@@ -283,8 +372,9 @@ export default function CourseDetailScreen() {
               : `${course.price.toLocaleString("vi-VN")}đ`}
           </Text>
           {isEnrolled && <Text style={s.enrolled}>✅ Đã đăng ký</Text>}
+          {checkingPayment && <Text style={s.checking}>⏳ Đang kiểm tra thanh toán...</Text>}
         </View>
-        <TouchableOpacity style={s.ctaBtn} onPress={handleEnroll}>
+        <TouchableOpacity style={s.ctaBtn} onPress={handleEnroll} disabled={checkingPayment}>
           <Text style={s.ctaBtnText}>
             {isEnrolled ? "Tiếp tục học" : "Đăng ký ngay"}
           </Text>
@@ -487,6 +577,7 @@ const s = StyleSheet.create({
   },
   ctaPrice: { fontSize: 22, fontWeight: "700", color: COLORS.primary },
   enrolled: { fontSize: 12, color: COLORS.success, fontWeight: "500" },
+  checking: { fontSize: 12, color: COLORS.primary, fontWeight: "500" },
   ctaBtn: {
     backgroundColor: COLORS.primary,
     borderRadius: RADIUS.md,

@@ -24,7 +24,7 @@ const getCurrentMobileHost = () => {
     if (host) return `http://${host}:8080/api`;
   }
 
-  return "http://192.168.44.108:8080/api";
+  return "http://192.168.44.104:8080/api";
 };
 
 const LOCAL_MOBILE_API = getCurrentMobileHost();

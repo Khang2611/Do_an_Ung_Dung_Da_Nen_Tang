@@ -9,10 +9,11 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  TextInput,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import { getLesson } from "../../services/lessonService";
-import { getChapter } from "../../services/chapterService";
+import { getLesson, getLessonsByChapter } from "../../services/lessonService";
+import { getChapter, getChaptersByCourse } from "../../services/chapterService";
 import { getCourse } from "../../services/courseService";
 import { getVideoSource, isHlsVideo } from "../../services/videoService";
 import { COURSES } from "../../constants/mockData";
@@ -36,6 +37,8 @@ export default function LessonScreen() {
   const [course, setCourse] = useState(null);
   const [chapterLessons, setChapterLessons] = useState([]);
   const [lessonIndex, setLessonIndex] = useState(-1);
+  const [commentText, setCommentText] = useState("");
+  const [comments, setComments] = useState([]);
 
   // States cho Video Streaming
   const [streamConfig, setStreamConfig] = useState(null);
@@ -92,6 +95,30 @@ export default function LessonScreen() {
         );
         setLessonIndex(index);
 
+        const chapters = await getChaptersByCourse(chapterData.courseId);
+        const chaptersWithLessons = await Promise.all(
+          (chapters || [])
+            .slice()
+            .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+            .map(async (ch) => {
+              const lessons = await getLessonsByChapter(ch.chapterId || ch.id);
+              return {
+                ...ch,
+                lessons: (lessons || [])
+                  .slice()
+                  .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0)),
+              };
+            }),
+        );
+        const courseLessons = chaptersWithLessons.flatMap((ch) => ch.lessons || []);
+        setCourse({ ...courseData, chapters: chaptersWithLessons });
+        setChapterLessons(courseLessons);
+        setLessonIndex(
+          courseLessons.findIndex(
+            (l) => Number(l.lessonId || l.id) === Number(lessonData.lessonId || lessonData.id),
+          ),
+        );
+
         // Tải cấu hình video của bài học từ backend
         if (lessonData.videoUrl) {
           const cfg = await getVideoSource(id, lessonData.videoUrl);
@@ -102,8 +129,16 @@ export default function LessonScreen() {
           setIsHls(false);
         }
       } catch (err) {
-        console.error("Lỗi tải bài học:", err.response?.status, err.response?.data || err.message);
-        Alert.alert("Lỗi", err.response?.data?.message || "Không thể tải bài học. Vui lòng thử lại.");
+        console.error(
+          "Lỗi tải bài học:",
+          err.response?.status,
+          err.response?.data || err.message,
+        );
+        Alert.alert(
+          "Lỗi",
+          err.response?.data?.message ||
+            "Không thể tải bài học. Vui lòng thử lại.",
+        );
         router.back();
         // Fallback sang Mock Data
         let foundLesson, foundCourse, foundChapter, foundIndex, foundLessons;
@@ -194,6 +229,20 @@ export default function LessonScreen() {
   const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
   }, []);
+
+  const handleAddComment = useCallback(() => {
+    const text = commentText.trim();
+    if (!text) return;
+
+    setComments((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        text,
+      },
+    ]);
+    setCommentText("");
+  }, [commentText]);
 
   if (loading)
     return (
@@ -308,7 +357,14 @@ export default function LessonScreen() {
             ))}
           </View>
 
-          <TabContent activeTab={activeTab} lesson={lesson} />
+          <TabContent
+            activeTab={activeTab}
+            lesson={lesson}
+            commentText={commentText}
+            comments={comments}
+            onCommentChange={setCommentText}
+            onAddComment={handleAddComment}
+          />
 
           <TouchableOpacity style={s.completeBtn}>
             <Text style={s.completeBtnText}>✅ Đánh dấu hoàn thành</Text>
@@ -354,7 +410,14 @@ export default function LessonScreen() {
   );
 }
 
-function TabContent({ activeTab, lesson }) {
+function TabContent({
+  activeTab,
+  lesson,
+  commentText,
+  comments,
+  onCommentChange,
+  onAddComment,
+}) {
   if (activeTab === "Nội dung") {
     return (
       <View style={s.contentBox}>

@@ -68,9 +68,6 @@ export default function HomeScreen() {
           <Text style={s.userName}>{user?.username || 'Bạn học'}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <TouchableOpacity onPress={handleLogout} style={s.logoutIconBtn}>
-            <Text style={{ fontSize: 18 }}>🚪</Text>
-          </TouchableOpacity>
           <TouchableOpacity onPress={goToProfile}>
             <Image 
               source={typeof user?.avatar === 'string' && user.avatar.startsWith('http') ? { uri: user.avatar } : IMAGES.default_avatar} 
