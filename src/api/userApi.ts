@@ -33,28 +33,15 @@ export async function updateUser(id: string, data: Partial<User>) {
   }
   
   if (data.role) {
-    // If backend uses /api/admin/users/{id}/role or /api/users/{id}/role
     const rolePayload = toApiRole(data.role);
-    try {
-      const response = await axiosClient.patch(`/api/admin/users/${id}/role`, { role: rolePayload });
-      return normalizeUser(unwrap<any>(response));
-    } catch {
-      // Fallback endpoint if admin prefix is not configured
-      const response = await axiosClient.patch(`${USERS}/${id}/role`, { role: rolePayload });
-      return normalizeUser(unwrap<any>(response));
-    }
+    const response = await axiosClient.patch(`${USERS}/${id}/role`, { role: rolePayload });
+    return normalizeUser(unwrap<any>(response));
   }
 
   if (data.status) {
     const statusPayload = toApiStatus(data.status);
-    try {
-      const response = await axiosClient.patch(`/api/admin/users/${id}/status`, { status: statusPayload });
-      return normalizeUser(unwrap<any>(response));
-    } catch {
-      // Fallback
-      const response = await axiosClient.patch(`${USERS}/${id}/status`, { status: statusPayload });
-      return normalizeUser(unwrap<any>(response));
-    }
+    const response = await axiosClient.patch(`${USERS}/${id}/status`, { status: statusPayload });
+    return normalizeUser(unwrap<any>(response));
   }
   
   throw new Error("Chức năng cập nhật không được hỗ trợ.");
@@ -81,13 +68,8 @@ export async function updateUserStatus(id: string, status: "ACTIVE" | "LOCKED") 
     return mockUsers[index];
   }
 
-  try {
-    const response = await axiosClient.patch(`/api/admin/users/${id}/status`, { status });
-    return normalizeUser(unwrap<any>(response));
-  } catch {
-    const response = await axiosClient.patch(`${USERS}/${id}/status`, { status });
-    return normalizeUser(unwrap<any>(response));
-  }
+  const response = await axiosClient.patch(`${USERS}/${id}/status`, { status });
+  return normalizeUser(unwrap<any>(response));
 }
 
 export async function deleteUser(id: string) {
@@ -96,9 +78,5 @@ export async function deleteUser(id: string) {
     if (index >= 0) mockUsers.splice(index, 1);
     return;
   }
-  try {
-    await axiosClient.delete(`/api/admin/users/${id}`);
-  } catch {
-    await axiosClient.delete(`${USERS}/${id}`);
-  }
+  await axiosClient.delete(`${USERS}/${id}`);
 }
