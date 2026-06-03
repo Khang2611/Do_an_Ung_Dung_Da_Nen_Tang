@@ -1,5 +1,6 @@
 package org.example.khoahoc.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.example.khoahoc.dto.response.ApiResponse;
 import org.example.khoahoc.entity.Lesson;
@@ -8,6 +9,7 @@ import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
 import org.example.khoahoc.repository.LessonRepository;
 import org.example.khoahoc.repository.UserRepository;
+import org.example.khoahoc.service.VideoBrowserGuard;
 import org.example.khoahoc.service.VideoService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class VideoController {
 
     private final VideoService videoService;
+    private final VideoBrowserGuard videoBrowserGuard;
     private final UserRepository userRepository;
     private final LessonRepository lessonRepository;
 
@@ -29,7 +32,10 @@ public class VideoController {
      * Endpoint để lấy link Signed URL cho video MP4 đơn lẻ.
      */
     @GetMapping("/signed-url/{lessonId}")
-    public ResponseEntity<String> getSignedUrl(@PathVariable Long lessonId) {
+    public ResponseEntity<String> getSignedUrl(
+            @PathVariable Long lessonId,
+            HttpServletRequest request) {
+        videoBrowserGuard.rejectUnsupportedBrowser(request);
         Long userId = getCurrentUserId();
         String signedUrl = videoService.getSignedUrl(lessonId, userId);
         return ResponseEntity.ok(signedUrl);
@@ -40,7 +46,10 @@ public class VideoController {
      * Trình phát video (hls.js) sẽ gọi vào đây.
      */
     @GetMapping(value = "/stream/{lessonId}/playlist.m3u8", produces = "application/x-mpegURL")
-    public ResponseEntity<String> getHlsPlaylist(@PathVariable Long lessonId) {
+    public ResponseEntity<String> getHlsPlaylist(
+            @PathVariable Long lessonId,
+            HttpServletRequest request) {
+        videoBrowserGuard.rejectUnsupportedBrowser(request);
         Long userId = getCurrentUserId();
         String playlistContent = videoService.getProxyHlsPlaylist(lessonId, userId);
 

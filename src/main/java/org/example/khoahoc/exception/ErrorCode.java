@@ -16,6 +16,7 @@ public enum ErrorCode {
     INVALID_SIGNATURE(4012, "Chữ ký không hợp lệ", HttpStatus.UNAUTHORIZED),
     // ── 403x → 403 Forbidden ────────────────────────────────────────────
     UNAUTHORIZED_ACTION(4031, "Bạn không có quyền thực hiện hành động này", HttpStatus.FORBIDDEN),
+    UNSUPPORTED_BROWSER(4032, "Trình duyệt Cốc Cốc không được hỗ trợ để xem video", HttpStatus.FORBIDDEN),
     // ── 409x → 409 Conflict ─────────────────────────────────────────────
     USER_EXISTED(4090, "Người dùng đã tồn tại", HttpStatus.CONFLICT),
     ENROLLMENT_EXISTED(4091, "Người dùng đã đăng ký khóa học này", HttpStatus.CONFLICT),
