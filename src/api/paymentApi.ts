@@ -21,6 +21,19 @@ export interface PendingPayment {
   createdAt: string;
 }
 
+export interface PaymentTransaction {
+  transactionId: number;
+  userId: number;
+  orderId: number;
+  amount: number;
+  paymentMethod?: string;
+  transactionRef?: string;
+  status: string;
+  ipAddress?: string;
+  createdDate?: string;
+  gatewayUrl?: string;
+}
+
 const PENDING_PAYMENT_KEY = "pending_payment";
 
 function getStoredUserId() {
@@ -83,6 +96,24 @@ export async function createPayment(courseId: string, paymentMethod: PaymentMeth
 export async function getPaymentTransaction(id: string | number) {
   const response = await axiosClient.get(`/api/payment-transactions/${id}`);
   return unwrap<any>(response);
+}
+
+export async function getPaymentTransactions(): Promise<PaymentTransaction[]> {
+  if (USE_MOCK) return [];
+
+  const response = await axiosClient.get("/api/payment-transactions");
+  return unwrap<any[]>(response).map((item) => ({
+    transactionId: Number(item.transactionId),
+    userId: Number(item.userId),
+    orderId: Number(item.orderId),
+    amount: Number(item.amount || 0),
+    paymentMethod: item.paymentMethod,
+    transactionRef: item.transactionRef,
+    status: String(item.status || ""),
+    ipAddress: item.ipAddress,
+    createdDate: item.createdDate,
+    gatewayUrl: item.gatewayUrl,
+  }));
 }
 
 export function getPendingPayment(): PendingPayment | null {

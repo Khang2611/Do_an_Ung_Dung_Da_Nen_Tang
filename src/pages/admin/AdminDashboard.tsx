@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BookOpen, CreditCard, Users } from "lucide-react";
 import { getCourses } from "../../api/courseApi";
+import { getPaymentTransactions, type PaymentTransaction } from "../../api/paymentApi";
 import { getUsers } from "../../api/userApi";
 import { Badge } from "../../components/common/Badge";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
@@ -9,25 +10,37 @@ import { PageHeader } from "../../components/common/PageHeader";
 import { StatCard } from "../../components/common/StatCard";
 import type { Course } from "../../types/course";
 import type { User } from "../../types/user";
-import { formatCurrency, formatRole, formatStatus, getRoleBadgeVariant, getStatusBadgeVariant } from "../../utils/format";
+import { formatRole, formatStatus, getRoleBadgeVariant, getStatusBadgeVariant } from "../../utils/format";
+
+const PAID_TRANSACTION_STATUSES = new Set(["SUCCESS", "PAID", "COMPLETED"]);
+
+function isPaidTransaction(transaction: PaymentTransaction) {
+  return PAID_TRANSACTION_STATUSES.has(String(transaction.status || "").toUpperCase());
+}
+
+function formatRevenue(value: number) {
+  return `${Math.round(value).toLocaleString("vi-VN")} đ`;
+}
 
 export function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([getUsers(), getCourses()])
-      .then(([userData, courseData]) => {
+    Promise.all([getUsers(), getCourses(), getPaymentTransactions()])
+      .then(([userData, courseData, transactionData]) => {
         setUsers(userData);
         setCourses(courseData);
+        setTransactions(transactionData);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Không thể tải dashboard."))
       .finally(() => setLoading(false));
   }, []);
 
-  const revenue = courses.reduce((sum, c) => sum + c.price * Math.min(c.studentsCount, 30), 0);
+  const revenue = transactions.filter(isPaidTransaction).reduce((sum, transaction) => sum + transaction.amount, 0);
   if (loading) return <Loading />;
   if (error) return <ErrorMessage message={error} />;
 
@@ -37,7 +50,7 @@ export function AdminDashboard() {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Người dùng" value={users.length} icon={<Users size={20} />} />
         <StatCard label="Khóa học" value={courses.length} icon={<BookOpen size={20} />} tone="sky" />
-        <StatCard label="Doanh thu" value={formatCurrency(revenue)} icon={<CreditCard size={20} />} tone="amber" />
+        <StatCard label="Doanh thu" value={formatRevenue(revenue)} icon={<CreditCard size={20} />} tone="amber" />
       </div>
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
