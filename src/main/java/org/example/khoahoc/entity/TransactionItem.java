@@ -12,7 +12,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Table(name = "transaction_item")
+@Table(name = "transaction_item", indexes = {
+    @Index(name = "idx_item_transaction", columnList = "transaction_id"),
+    @Index(name = "idx_item_course", columnList = "course_id")
+})
 public class TransactionItem {
     
     @Id

@@ -12,7 +12,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Table(name = "resource")
+@Table(name = "resource", indexes = {
+    @Index(name = "idx_resource_lesson", columnList = "lesson_id")
+})
 public class Resource {
     
     @Id

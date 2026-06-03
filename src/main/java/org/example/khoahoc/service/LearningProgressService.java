@@ -13,6 +13,7 @@ import org.example.khoahoc.exception.ErrorCode;
 import org.example.khoahoc.mapper.LearningProgressMapper;
 import org.example.khoahoc.repository.LearningProgressRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,11 +22,13 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
+@Transactional(readOnly = true)
 public class LearningProgressService {
 
     LearningProgressRepository learningProgressRepository;
     LearningProgressMapper learningProgressMapper;
 
+    @Transactional
     public LearningProgressResponse createLearningProgress(LearningProgressCreationRequest request) {
         log.info("Creating learning progress for enrollmentId: {}, lessonId: {}", request.getEnrollmentId(),
                 request.getLessonId());
@@ -59,6 +62,7 @@ public class LearningProgressService {
                 .toLearningProgressResponseList(learningProgressRepository.findByEnrollmentId(enrollmentId));
     }
 
+    @Transactional
     public LearningProgressResponse updateLearningProgress(Long id, LearningProgressUpdateRequest request) {
         LearningProgress progress = learningProgressRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.LEARNING_PROGRESS_NOT_FOUND));
@@ -77,6 +81,7 @@ public class LearningProgressService {
         return learningProgressMapper.toLearningProgressResponse(progress);
     }
 
+    @Transactional
     public void deleteLearningProgress(Long id) {
         LearningProgress progress = learningProgressRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.LEARNING_PROGRESS_NOT_FOUND));

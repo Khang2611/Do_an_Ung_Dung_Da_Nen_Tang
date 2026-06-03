@@ -3,16 +3,10 @@ package org.example.khoahoc.controller;
 import tools.jackson.databind.ObjectMapper;
 import org.example.khoahoc.config.SecurityConfig;
 import org.example.khoahoc.dto.request.WebhookCallbackRequest;
-import org.example.khoahoc.dto.response.PaymentTransactionResponse;
-import org.example.khoahoc.entity.PaymentTransaction;
-import org.example.khoahoc.entity.TransactionItem;
 import org.example.khoahoc.exception.AppException;
 import org.example.khoahoc.exception.ErrorCode;
-import org.example.khoahoc.repository.PaymentTransactionRepository;
-import org.example.khoahoc.repository.TransactionItemRepository;
 import org.example.khoahoc.security.JwtAuthenticationFilter;
 import org.example.khoahoc.security.JwtTokenProvider;
-import org.example.khoahoc.service.EnrollmentService;
 import org.example.khoahoc.service.PaymentSignatureService;
 import org.example.khoahoc.service.PaymentTransactionService;
 import org.junit.jupiter.api.Test;
@@ -24,19 +18,17 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @WebMvcTest(controllers = PaymentWebhookController.class, properties = {
                 "payment.webhook.api-key=test-api-key",
@@ -53,15 +45,6 @@ public class PaymentWebhookControllerTest {
 
         @MockitoBean
         private PaymentTransactionService paymentTransactionService;
-
-        @MockitoBean
-        private PaymentTransactionRepository paymentTransactionRepository;
-
-        @MockitoBean
-        private TransactionItemRepository transactionItemRepository;
-
-        @MockitoBean
-        private EnrollmentService enrollmentService;
 
         @MockitoBean
         private PaymentSignatureService paymentSignatureService;
@@ -81,33 +64,7 @@ public class PaymentWebhookControllerTest {
                                 .nonce("random-nonce")
                                 .build();
 
-                PaymentTransaction transaction = PaymentTransaction.builder()
-                                .transactionId(100L)
-                                .transactionRef("TX123456")
-                                .build();
-
-                PaymentTransactionResponse response = PaymentTransactionResponse.builder()
-                                .transactionId(100L)
-                                .transactionRef("TX123456")
-                                .userId(1L)
-                                .status("SUCCESS")
-                                .build();
-
-                TransactionItem item1 = TransactionItem.builder()
-                                .transactionId(100L)
-                                .courseId(5L)
-                                .build();
-
-                TransactionItem item2 = TransactionItem.builder()
-                                .transactionId(100L)
-                                .courseId(6L)
-                                .build();
-
                 when(paymentSignatureService.verify(anyString(), anyString(), eq("test-secret-key"))).thenReturn(true);
-                when(paymentTransactionRepository.findByTransactionRef("TX123456"))
-                                .thenReturn(Optional.of(transaction));
-                when(paymentTransactionService.updateTransaction(eq(100L), any())).thenReturn(response);
-                when(transactionItemRepository.findByTransactionId(100L)).thenReturn(List.of(item1, item2));
 
                 mockMvc.perform(post("/api/webhook/payment")
                                 .header("X-Api-Key", "test-api-key")
@@ -115,12 +72,11 @@ public class PaymentWebhookControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isOk())
-                                .andExpect(content().string("Webhook xử lý thành công"));
+                                .andExpect(jsonPath("$.code").value(200))
+                                .andExpect(jsonPath("$.message").value("Webhook xử lý thành công"))
+                                .andExpect(jsonPath("$.result").value("Success"));
 
-                verify(enrollmentService)
-                                .createEnrollment(argThat(r -> r.getUserId().equals(1L) && r.getCourseId().equals(5L)));
-                verify(enrollmentService)
-                                .createEnrollment(argThat(r -> r.getUserId().equals(1L) && r.getCourseId().equals(6L)));
+                verify(paymentTransactionService).processPaymentWebhook(any(WebhookCallbackRequest.class));
         }
 
         @Test
@@ -135,32 +91,7 @@ public class PaymentWebhookControllerTest {
                                 .nonce("random-nonce")
                                 .build();
 
-                PaymentTransaction transaction = PaymentTransaction.builder()
-                                .transactionId(100L)
-                                .transactionRef("TX123456")
-                                .build();
-
-                PaymentTransactionResponse response = PaymentTransactionResponse.builder()
-                                .transactionId(100L)
-                                .transactionRef("TX123456")
-                                .userId(1L)
-                                .status("SUCCESS")
-                                .build();
-
-                TransactionItem item = TransactionItem.builder()
-                                .transactionId(100L)
-                                .courseId(5L)
-                                .build();
-
                 when(paymentSignatureService.verify(anyString(), anyString(), eq("test-secret-key"))).thenReturn(true);
-                when(paymentTransactionRepository.findByTransactionRef("TX123456"))
-                                .thenReturn(Optional.of(transaction));
-                when(paymentTransactionService.updateTransaction(eq(100L), any())).thenReturn(response);
-                when(transactionItemRepository.findByTransactionId(100L)).thenReturn(List.of(item));
-
-                // Ném ngoại lệ đã đăng ký để kiểm thử idempotency
-                doThrow(new AppException(ErrorCode.ENROLLMENT_EXISTED))
-                                .when(enrollmentService).createEnrollment(any());
 
                 mockMvc.perform(post("/api/webhook/payment")
                                 .header("X-Api-Key", "test-api-key")
@@ -168,7 +99,11 @@ public class PaymentWebhookControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isOk())
-                                .andExpect(content().string("Webhook xử lý thành công"));
+                                .andExpect(jsonPath("$.code").value(200))
+                                .andExpect(jsonPath("$.message").value("Webhook xử lý thành công"))
+                                .andExpect(jsonPath("$.result").value("Success"));
+
+                verify(paymentTransactionService).processPaymentWebhook(any(WebhookCallbackRequest.class));
         }
 
         @Test
@@ -180,7 +115,8 @@ public class PaymentWebhookControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isUnauthorized())
-                                .andExpect(content().string("Invalid API Key"));
+                                .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_API_KEY.getCode()))
+                                .andExpect(jsonPath("$.message").value(ErrorCode.INVALID_API_KEY.getMessage()));
         }
 
         @Test
@@ -203,7 +139,8 @@ public class PaymentWebhookControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isUnauthorized())
-                                .andExpect(content().string("Invalid Signature"));
+                                .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_SIGNATURE.getCode()))
+                                .andExpect(jsonPath("$.message").value(ErrorCode.INVALID_SIGNATURE.getMessage()));
         }
 
         @Test
@@ -219,7 +156,8 @@ public class PaymentWebhookControllerTest {
                                 .build();
 
                 when(paymentSignatureService.verify(anyString(), anyString(), eq("test-secret-key"))).thenReturn(true);
-                when(paymentTransactionRepository.findByTransactionRef("TX123456")).thenReturn(Optional.empty());
+                doThrow(new AppException(ErrorCode.PAYMENT_TRANSACTION_NOT_FOUND))
+                                .when(paymentTransactionService).processPaymentWebhook(any());
 
                 mockMvc.perform(post("/api/webhook/payment")
                                 .header("X-Api-Key", "test-api-key")
@@ -227,6 +165,7 @@ public class PaymentWebhookControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                                 .andExpect(status().isNotFound())
-                                .andExpect(content().string(ErrorCode.PAYMENT_TRANSACTION_NOT_FOUND.getMessage()));
+                                .andExpect(jsonPath("$.code").value(ErrorCode.PAYMENT_TRANSACTION_NOT_FOUND.getCode()))
+                                .andExpect(jsonPath("$.message").value(ErrorCode.PAYMENT_TRANSACTION_NOT_FOUND.getMessage()));
         }
 }

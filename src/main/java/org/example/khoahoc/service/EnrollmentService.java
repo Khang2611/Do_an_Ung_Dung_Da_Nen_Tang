@@ -16,6 +16,7 @@ import org.example.khoahoc.mapper.EnrollmentMapper;
 import org.example.khoahoc.repository.CourseRepository;
 import org.example.khoahoc.repository.EnrollmentRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,14 +25,20 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
+@Transactional(readOnly = true)
 public class EnrollmentService {
 
     EnrollmentRepository enrollmentRepository;
     EnrollmentMapper enrollmentMapper;
     CourseRepository courseRepository;
 
+    @Transactional
     public EnrollmentResponse createEnrollment(EnrollmentCreationRequest request) {
         log.info("Creating new enrollment for userId: {}, courseId: {}", request.getUserId(), request.getCourseId());
+
+        if (!courseRepository.existsById(request.getCourseId())) {
+            throw new AppException(ErrorCode.COURSE_NOT_FOUND);
+        }
 
         if (enrollmentRepository.findByUserIdAndCourseId(request.getUserId(), request.getCourseId()).isPresent()) {
             throw new AppException(ErrorCode.ENROLLMENT_EXISTED);
@@ -84,6 +91,7 @@ public class EnrollmentService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public EnrollmentResponse updateEnrollment(Long id, EnrollmentUpdateRequest request) {
         Enrollment enrollment = enrollmentRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));
@@ -94,6 +102,7 @@ public class EnrollmentService {
         return enrollmentMapper.toEnrollmentResponse(enrollment);
     }
 
+    @Transactional
     public void deleteEnrollment(Long id) {
         Enrollment enrollment = enrollmentRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ENROLLMENT_NOT_FOUND));

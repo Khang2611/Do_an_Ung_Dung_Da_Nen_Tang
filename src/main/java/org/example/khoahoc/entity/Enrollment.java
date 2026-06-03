@@ -12,7 +12,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Table(name = "enrollment")
+@Table(
+    name = "enrollment",
+    uniqueConstraints = @UniqueConstraint(name = "uk_enrollment_user_course", columnNames = {"user_id", "course_id"}),
+    indexes = {
+        @Index(name = "idx_enrollment_course", columnList = "course_id")
+    }
+)
 public class Enrollment {
     
     @Id

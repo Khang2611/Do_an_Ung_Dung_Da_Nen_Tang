@@ -12,6 +12,8 @@ public enum ErrorCode {
     INVALID_ROLE(4001, "Vai trò không hợp lệ", HttpStatus.BAD_REQUEST),
     // ── 401x → 401 Unauthorized ─────────────────────────────────────────
     INVALID_CREDENTIALS(4010, "Tên đăng nhập hoặc mật khẩu không đúng", HttpStatus.UNAUTHORIZED),
+    INVALID_API_KEY(4011, "API Key không hợp lệ", HttpStatus.UNAUTHORIZED),
+    INVALID_SIGNATURE(4012, "Chữ ký không hợp lệ", HttpStatus.UNAUTHORIZED),
     // ── 403x → 403 Forbidden ────────────────────────────────────────────
     UNAUTHORIZED_ACTION(4031, "Bạn không có quyền thực hiện hành động này", HttpStatus.FORBIDDEN),
     // ── 409x → 409 Conflict ─────────────────────────────────────────────
