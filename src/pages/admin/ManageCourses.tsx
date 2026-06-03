@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  Trash2, Search, Filter, Clock,
+import React, { useEffect, useMemo, useState } from "react";
+import { 
+  EyeOff, Trash2, Search, Filter, BookOpen, Clock, 
   Layers, X, Eye, FileText, CornerDownRight 
 } from "lucide-react";
-import { deleteCourse, getCourses } from "../../api/courseApi";
+import { deleteCourse, getCourses, updateCourse } from "../../api/courseApi";
 import { Badge } from "../../components/common/Badge";
 import { Button } from "../../components/common/Button";
 import { EmptyState } from "../../components/common/EmptyState";
@@ -20,6 +20,7 @@ export function ManageCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -72,9 +73,26 @@ export function ManageCourses() {
       // Category
       const matchCategory = categoryFilter === "all" || c.category === categoryFilter;
 
-      return matchSearch && matchCategory;
+      const matchStatus = statusFilter === "all" || String(c.status).toLowerCase() === statusFilter.toLowerCase();
+
+      return matchSearch && matchCategory && matchStatus;
     });
-  }, [courses, search, categoryFilter]);
+  }, [courses, search, categoryFilter, statusFilter]);
+
+  // Hide course handler (Toggle draft/published)
+  const handleHideCourse = async (course: Course) => {
+    const nextStatus = course.status === "hidden" ? "published" : "hidden";
+    const statusText = nextStatus === "published" ? "hiển thị" : "ẩn";
+    try {
+      await updateCourse(course.id, { status: nextStatus });
+      setCourses((prev) =>
+        prev.map((c) => (c.id === course.id ? { ...c, status: nextStatus } : c))
+      );
+      showToast(`Đã ${statusText} khóa học "${course.title}".`, "success");
+    } catch (err) {
+      showToast("Không thể cập nhật trạng thái khóa học.", "error");
+    }
+  };
 
   // Delete course handler
   const handleDeleteCourse = (course: Course) => {
@@ -110,7 +128,7 @@ export function ManageCourses() {
     <div className="space-y-6">
       <PageHeader 
         title="Quản lý khóa học" 
-        description="Theo dõi chi tiết và xóa các khóa học trên hệ thống EduFlow."
+        description="Theo dõi, ẩn hoặc xóa các khóa học trên hệ thống EduFlow."
       />
 
       {/* Search & Filter Bar */}
@@ -139,6 +157,18 @@ export function ManageCourses() {
             {categories.map((cat) => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
+          </select>
+
+          <select 
+            value={statusFilter} 
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-600 cursor-pointer"
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="published">Đã xuất bản</option>
+            <option value="approved">Đã xuất bản</option>
+            <option value="draft">Bản nháp</option>
+            <option value="hidden">Đã ẩn</option>
           </select>
         </div>
       </div>
@@ -170,6 +200,8 @@ export function ManageCourses() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredCourses.map((course) => {
+                  const isHidden = String(course.status).toLowerCase() === "hidden";
+                  
                   return (
                     <tr key={course.id} className="hover:bg-slate-50/70 transition">
                       
@@ -220,6 +252,16 @@ export function ManageCourses() {
                           title="Xem giáo trình bài học"
                         >
                           <Eye size={15} />
+                        </Button>
+
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleHideCourse(course)}
+                          title={isHidden ? "Hiện khóa học" : "Ẩn khóa học"}
+                        >
+                          <EyeOff size={14} />
+                          {isHidden ? "Hiện" : "Ẩn"}
                         </Button>
 
                         <Button 
