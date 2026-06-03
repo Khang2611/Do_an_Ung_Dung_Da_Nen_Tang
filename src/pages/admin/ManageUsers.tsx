@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Filter, Lock, Search, Trash2, Unlock, UserCog, UserPlus, Users } from "lucide-react";
-import { deleteUser, getUsers, updateUserRole, updateUserStatus } from "../../api/userApi";
+import { Eye, Filter, Lock, Search, Trash2, UserCog, UserPlus, Users } from "lucide-react";
+import { deleteUser, getUsers, updateUserRole } from "../../api/userApi";
 import { getCourses } from "../../api/courseApi";
 import { getEnrollments } from "../../api/enrollmentApi";
 import { Badge } from "../../components/common/Badge";
@@ -112,7 +112,12 @@ export function ManageUsers() {
       confirmText: "Xác nhận",
       onConfirm: () =>
         runConfirmed(async () => {
-          await updateUserRole(target.id, nextRole);
+          try {
+            await updateUserRole(target.id, nextRole);
+          } catch (err) {
+            const detail = err instanceof Error ? err.message : "Không thể kết nối API.";
+            throw new Error(`Không thể đổi vai trò. Kiểm tra backend/CORS PATCH /api/users/{id}/role. ${detail}`);
+          }
           setUsers((prev) => prev.map((item) => (item.id === target.id ? { ...item, role: normalizeRole(nextRole) } : item)));
           showToast(`Đã chuyển ${target.fullName} thành ${toText}.`, "success");
         }),
@@ -120,30 +125,7 @@ export function ManageUsers() {
   };
 
   const handleToggleStatus = (target: User) => {
-    if (isSelf(target)) {
-      showToast("Bạn không thể tự khóa chính mình.", "error");
-      return;
-    }
-    if (isAdmin(target)) {
-      showToast("Không thể khóa tài khoản quản trị viên.", "error");
-      return;
-    }
-
-    const nextStatus = normalizeStatus(target.status) === "active" ? "LOCKED" : "ACTIVE";
-    const actionText = nextStatus === "LOCKED" ? "Khóa" : "Mở";
-
-    setConfirmConfig({
-      title: `${actionText} tài khoản`,
-      message: `Bạn có chắc muốn ${actionText.toLowerCase()} tài khoản ${target.fullName} (@${target.username}) không?`,
-      type: nextStatus === "LOCKED" ? "danger" : "info",
-      confirmText: actionText,
-      onConfirm: () =>
-        runConfirmed(async () => {
-          await updateUserStatus(target.id, nextStatus);
-          setUsers((prev) => prev.map((item) => (item.id === target.id ? { ...item, status: normalizeStatus(nextStatus) } : item)));
-          showToast(`${actionText} tài khoản ${target.fullName} thành công.`, "success");
-        }),
-    });
+    showToast(`Chức năng khóa/mở tài khoản ${target.fullName} phụ thuộc backend.`, "error");
   };
 
   const handleDeleteUser = (target: User) => {
@@ -295,9 +277,15 @@ export function ManageUsers() {
                             </select>
                             <span className="pointer-events-none absolute right-3 text-slate-400">▾</span>
                           </label>
-                          <Button variant={status === "active" ? "secondary" : "primary"} size="sm" disabled={self || admin} onClick={() => handleToggleStatus(item)}>
-                            {status === "active" ? <Lock size={14} /> : <Unlock size={14} />}
-                            {status === "active" ? "Khóa" : "Mở"}
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled
+                            onClick={() => handleToggleStatus(item)}
+                            title="Chức năng này phụ thuộc backend"
+                          >
+                            <Lock size={14} />
+                            Phụ thuộc backend
                           </Button>
                           <Button variant="danger" size="sm" disabled={self || admin} onClick={() => handleDeleteUser(item)}>
                             <Trash2 size={14} /> Xóa

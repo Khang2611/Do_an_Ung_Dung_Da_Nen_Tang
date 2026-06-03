@@ -135,6 +135,7 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [categoryLoadError, setCategoryLoadError] = useState("");
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const {
     register,
     handleSubmit,
@@ -195,7 +196,8 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
       .then((items) => {
         if (!mounted) return;
         setCategories(items);
-        setCategoryLoadError("");
+        setCategoriesLoaded(true);
+        setCategoryLoadError(items.length ? "" : "Chưa có danh mục khóa học. Cần chuẩn bị dữ liệu category trước khi tạo khóa học.");
 
         const selected =
           items.find((item) => item.categoryId === initialValue?.categoryId) ||
@@ -209,6 +211,7 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
       })
       .catch((err) => {
         if (!mounted) return;
+        setCategoriesLoaded(true);
         setCategoryLoadError(err instanceof Error ? err.message : "Không thể tải danh mục khóa học.");
       });
 
@@ -229,7 +232,12 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
         return;
       }
       if (!formValues.categoryId) {
-        setError("categoryId", { message: "Vui lòng chọn danh mục." });
+        setError("categoryId", {
+          message:
+            categoriesLoaded && !categories.length
+              ? "Chưa có danh mục khóa học. Cần chuẩn bị dữ liệu category trước khi tạo khóa học."
+              : "Vui lòng chọn danh mục.",
+        });
         return;
       }
       await onSubmit({
@@ -311,7 +319,7 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
                     }}
                     disabled={!categories.length}
                   >
-                    <option value="">{categories.length ? "Chọn danh mục" : "Đang tải danh mục..."}</option>
+                    <option value="">{categories.length ? "Chọn danh mục" : categoriesLoaded ? "Chưa có danh mục" : "Đang tải danh mục..."}</option>
                     {categories.map((category) => (
                       <option key={category.categoryId} value={category.categoryId}>
                         {category.name}
@@ -399,7 +407,7 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
         </section>
 
         <div className="flex flex-wrap gap-3">
-          <Button disabled={isSubmitting}>{isSubmitting ? "Đang lưu..." : submitLabel}</Button>
+          <Button disabled={isSubmitting || (categoriesLoaded && !categories.length)}>{isSubmitting ? "Đang lưu..." : submitLabel}</Button>
         </div>
       </div>
 

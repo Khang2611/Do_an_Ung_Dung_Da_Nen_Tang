@@ -63,7 +63,7 @@ export async function updateUserRole(id: string, role: FrontendRole) {
 export async function updateUserStatus(id: string, status: "ACTIVE" | "LOCKED") {
   if (USE_MOCK) {
     const index = mockUsers.findIndex((item) => item.id === id);
-    if (index < 0) throw new Error("KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng.");
+    if (index < 0) throw new Error("Không tìm thấy người dùng.");
     mockUsers[index] = { ...mockUsers[index], status: normalizeStatus(status) };
     return mockUsers[index];
   }
