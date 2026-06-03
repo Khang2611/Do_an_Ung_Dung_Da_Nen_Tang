@@ -88,6 +88,8 @@ export function ManageUsers() {
     try {
       await action();
       setConfirmConfig(null);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Không thể thực hiện thao tác.", "error");
     } finally {
       setActionLoading(false);
     }
