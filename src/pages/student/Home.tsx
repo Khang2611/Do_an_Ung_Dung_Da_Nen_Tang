@@ -21,7 +21,6 @@ import {
   Menu,
   MessageCircle,
   Phone,
-  PlayCircle,
   Rocket,
   ShieldCheck,
   Sparkles,
@@ -214,15 +213,6 @@ export function Home() {
                   <div className="mt-1 text-sm font-semibold text-slate-500">{label}</div>
                 </div>
               ))}
-            </div>
-            <div className="mt-4 rounded-2xl bg-slate-950/70 p-4">
-              <div className="flex items-center gap-3">
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-cyan-400 text-slate-950"><PlayCircle size={22} /></span>
-                <div>
-                  <div className="font-bold">Video HLS bảo mật</div>
-                  <div className="text-sm text-slate-300">Khớp backend Spring Boot + JWT</div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
