@@ -334,7 +334,7 @@ export const mockCourses: Course[] = [
     duration: "1.5 giờ",
     rating: 4.6,
     studentsCount: 520,
-    status: "published",
+    status: "pending",
     progress: 0,
     chapters: [
       {
@@ -464,7 +464,7 @@ export const mockCourses: Course[] = [
     duration: "5 giờ",
     rating: 4.7,
     studentsCount: 310,
-    status: "published",
+    status: "pending",
     progress: 0,
     chapters: [
       {

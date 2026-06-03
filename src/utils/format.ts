@@ -36,6 +36,7 @@ export function formatRole(role?: string) {
 
 export function normalizeCourseStatus(status?: string) {
   const value = String(status || "draft").toLowerCase();
+  if (value === "pending" || value === "pending_review") return "pending_review";
   if (value === "published" || value === "approved") return "approved";
   if (value === "rejected") return "rejected";
   if (value === "hidden") return "hidden";
@@ -47,8 +48,8 @@ export function formatStatus(status?: string) {
   const map: Record<string, string> = {
     published: "Đã xuất bản",
     approved: "Đã xuất bản",
-    pending: "Bản nháp",
-    pending_review: "Bản nháp",
+    pending: "Chờ duyệt",
+    pending_review: "Chờ duyệt",
     draft: "Bản nháp",
     rejected: "Bị từ chối",
     active: "Hoạt động",
