@@ -21,6 +21,7 @@ import {
   Menu,
   MessageCircle,
   Phone,
+  PlayCircle,
   Rocket,
   ShieldCheck,
   Sparkles,
@@ -202,6 +203,7 @@ export function Home() {
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">Học theo lộ trình, luyện tập bằng bài kiểm tra, theo dõi tiến độ và học video chất lượng cao trên EduFlow.</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link to="/courses"><Button className="h-12 px-6"><Rocket size={18} />Khám phá khóa học</Button></Link>
+              <Button className="h-12 px-6 bg-white text-slate-950 hover:bg-slate-100" onClick={() => scrollTo("counseling")}>Nhận tư vấn miễn phí</Button>
             </div>
           </div>
 
@@ -213,6 +215,15 @@ export function Home() {
                   <div className="mt-1 text-sm font-semibold text-slate-500">{label}</div>
                 </div>
               ))}
+            </div>
+            <div className="mt-4 rounded-2xl bg-slate-950/70 p-4">
+              <div className="flex items-center gap-3">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-cyan-400 text-slate-950"><PlayCircle size={22} /></span>
+                <div>
+                  <div className="font-bold">Video HLS bảo mật</div>
+                  <div className="text-sm text-slate-300">Khớp backend Spring Boot + JWT</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

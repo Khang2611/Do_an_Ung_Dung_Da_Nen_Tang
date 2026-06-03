@@ -80,7 +80,7 @@ export function Profile() {
           setAllEnrollmentsCount(enrollments.length);
         }
       } catch (err) {
-        console.error("Lỗi khi tải dữ liệu dashboard:", err);
+        console.error("Lá»—i khi táº£i dá»¯ liá»‡u dashboard:", err);
       } finally {
         setLoading(false);
       }
@@ -92,17 +92,17 @@ export function Profile() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullNameInput.trim()) {
-      showToast("Họ tên không được để trống.", "error");
+      showToast("Há» tĂªn khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng.", "error");
       return;
     }
 
     if (passwordInput && passwordInput.length < 6) {
-      showToast("Mật khẩu mới phải có ít nhất 6 ký tự.", "error");
+      showToast("Máº­t kháº©u má»›i pháº£i cĂ³ Ă­t nháº¥t 6 kĂ½ tá»±.", "error");
       return;
     }
 
     if (passwordInput !== confirmPasswordInput) {
-      showToast("Mật khẩu xác nhận không khớp.", "error");
+      showToast("Máº­t kháº©u xĂ¡c nháº­n khĂ´ng khá»›p.", "error");
       return;
     }
 
@@ -114,10 +114,10 @@ export function Profile() {
         ...(passwordInput ? { password: passwordInput } : {}),
       });
       if (avatarFile) await uploadAvatar(avatarFile);
-      showToast("Đã cập nhật hồ sơ thành công.", "success");
+      showToast("ÄĂ£ cáº­p nháº­t há»“ sÆ¡ thĂ nh cĂ´ng.", "success");
       setIsEditModalOpen(false);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Không thể cập nhật hồ sơ.", "error");
+      showToast(err instanceof Error ? err.message : "KhĂ´ng thá»ƒ cáº­p nháº­t há»“ sÆ¡.", "error");
     } finally {
       setProfileSaving(false);
     }
@@ -126,11 +126,11 @@ export function Profile() {
   const selectAvatarFile = (file: File | null) => {
     if (!file) return;
     if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
-      showToast("Avatar chỉ hỗ trợ JPG, PNG, WEBP hoặc GIF.", "error");
+      showToast("Avatar chá»‰ há»— trá»£ JPG, PNG, WEBP hoáº·c GIF.", "error");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      showToast("Avatar tối đa 5MB.", "error");
+      showToast("Avatar tá»‘i Ä‘a 5MB.", "error");
       return;
     }
     if (avatarPreview) URL.revokeObjectURL(avatarPreview);
@@ -147,6 +147,7 @@ export function Profile() {
   const avgProgress = enrolledCourses.length > 0 
     ? Math.round(enrolledCourses.reduce((sum, c) => sum + (c.progress || 0), 0) / enrolledCourses.length) 
     : 0;
+
   const totalStudyTime = enrolledCourses.length * 4; // simulated average of 4h per course
   const certificatesCount = enrolledCourses.filter(c => c.progress === 100).length;
 
@@ -187,23 +188,23 @@ export function Profile() {
                 <div>
                   <div className="flex flex-wrap justify-center sm:justify-start gap-2 items-center">
                     <Badge variant={getRoleBadgeVariant(displayRole)}>{formatRole(displayRole)}</Badge>
-                    <Badge variant="success">Hoạt động</Badge>
+                    <Badge variant="success">Hoáº¡t Ä‘á»™ng</Badge>
                   </div>
                   <h1 className="mt-3 text-3xl font-extrabold text-slate-900 tracking-tight">{user?.fullName || user?.username}</h1>
                   <p className="mt-1 text-slate-500 font-medium flex items-center justify-center sm:justify-start gap-1.5">
-                    <Mail size={15} className="text-slate-400" /> {user?.email || "Chưa cập nhật email"}
+                    <Mail size={15} className="text-slate-400" /> {user?.email || "ChÆ°a cáº­p nháº­t email"}
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-3">
                 <Button variant="secondary" onClick={() => setIsEditModalOpen(true)}>
-                  <Edit3 size={16} /> Cập nhật hồ sơ
+                  <Edit3 size={16} /> Cáº­p nháº­t há»“ sÆ¡
                 </Button>
                 {isAdmin && (
                   <Link to="/admin">
                     <Button>
-                      <ShieldCheck size={16} /> Trang quản trị
+                      <ShieldCheck size={16} /> Trang quáº£n trá»‹
                     </Button>
                   </Link>
                 )}
@@ -213,34 +214,34 @@ export function Profile() {
 
           {/* SECTION STATS */}
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-4 tracking-tight">Tổng quan hoạt động</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-4 tracking-tight">Tá»•ng quan hoáº¡t Ä‘á»™ng</h2>
             
             {/* Student Stats */}
             {isStudent && (
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                <StatCard label="Khóa đã đăng ký" value={enrolledCourses.length} icon={<BookOpen size={20} />} />
-                <StatCard label="Tiến độ trung bình" value={`${avgProgress}%`} icon={<Target size={20} />} tone="emerald" />
-                <StatCard label="Chứng chỉ nhận được" value={certificatesCount} icon={<Award size={20} />} tone="amber" />
+                <StatCard label="KhĂ³a Ä‘Ă£ Ä‘Äƒng kĂ½" value={enrolledCourses.length} icon={<BookOpen size={20} />} />
+                <StatCard label="Tiáº¿n Ä‘á»™ trung bĂ¬nh" value={`${avgProgress}%`} icon={<Target size={20} />} tone="emerald" />
+                <StatCard label="Chá»©ng chá»‰ nháº­n Ä‘Æ°á»£c" value={certificatesCount} icon={<Award size={20} />} tone="amber" />
               </div>
             )}
 
             {/* Instructor Stats */}
             {isInstructor && (
-              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-                <StatCard label="Khóa học đang dạy" value={teachingCourses.length} icon={<BookOpen size={20} />} tone="indigo" />
-                <StatCard label="Tổng học viên" value={totalStudents.toLocaleString("vi-VN")} icon={<GraduationCap size={20} />} tone="emerald" />
-                <StatCard label="Đánh giá trung bình" value={`${avgRating} ★`} icon={<Star size={20} />} tone="amber" />
-                <StatCard label="Doanh thu tạm tính" value={formatCurrency(estimatedRevenue)} icon={<DollarSign size={20} />} tone="sky" />
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                <StatCard label="KhĂ³a há»c Ä‘ang dáº¡y" value={teachingCourses.length} icon={<BookOpen size={20} />} tone="indigo" />
+                <StatCard label="Tá»•ng há»c viĂªn" value={totalStudents.toLocaleString("vi-VN")} icon={<GraduationCap size={20} />} tone="emerald" />
+                <StatCard label="ÄĂ¡nh giĂ¡ trung bĂ¬nh" value={`${avgRating} â˜…`} icon={<Star size={20} />} tone="amber" />
+                <StatCard label="Doanh thu táº¡m tĂ­nh" value={formatCurrency(estimatedRevenue)} icon={<DollarSign size={20} />} tone="sky" />
               </div>
             )}
 
             {/* Admin Stats */}
             {isAdmin && (
-              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-                <StatCard label="Tổng người dùng" value={allUsersCount} icon={<Users size={20} />} tone="rose" />
-                <StatCard label="Tổng khóa học" value={allCourses.length} icon={<BookOpen size={20} />} tone="sky" />
-                <StatCard label="Tổng lượt học" value={allEnrollmentsCount} icon={<GraduationCap size={20} />} tone="emerald" />
-                <StatCard label="Tổng doanh thu" value={formatCurrency(adminRevenue)} icon={<DollarSign size={20} />} tone="amber" />
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                <StatCard label="Tá»•ng ngÆ°á»i dĂ¹ng" value={allUsersCount} icon={<Users size={20} />} tone="rose" />
+                <StatCard label="Tá»•ng khĂ³a há»c" value={allCourses.length} icon={<BookOpen size={20} />} tone="sky" />
+                <StatCard label="Tá»•ng lÆ°á»£t há»c" value={allEnrollmentsCount} icon={<GraduationCap size={20} />} tone="emerald" />
+                <StatCard label="Tá»•ng doanh thu" value={formatCurrency(adminRevenue)} icon={<DollarSign size={20} />} tone="amber" />
               </div>
             )}
           </div>
@@ -255,18 +256,18 @@ export function Profile() {
               {isStudent && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">Khóa học của tôi</h3>
+                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">KhĂ³a há»c cá»§a tĂ´i</h3>
                     <Link to="/student/my-courses" className="text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-                      Xem tất cả <ArrowRight size={14} />
+                      Xem táº¥t cáº£ <ArrowRight size={14} />
                     </Link>
                   </div>
 
                   {enrolledCourses.length === 0 ? (
                     <div className="rounded-2xl border-2 border-dashed border-slate-200 py-12 text-center text-slate-400">
                       <BookOpen size={48} className="mx-auto text-slate-300 mb-3" />
-                      <p className="font-semibold text-slate-500">Bạn chưa đăng ký khóa học nào.</p>
+                      <p className="font-semibold text-slate-500">Báº¡n chÆ°a Ä‘Äƒng kĂ½ khĂ³a há»c nĂ o.</p>
                       <Link to="/courses" className="mt-3 inline-block">
-                        <Button size="sm">Khám phá khóa học</Button>
+                        <Button size="sm">KhĂ¡m phĂ¡ khĂ³a há»c</Button>
                       </Link>
                     </div>
                   ) : (
@@ -285,12 +286,12 @@ export function Profile() {
                             <div>
                               <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md uppercase tracking-wider">{course.category}</span>
                               <h4 className="mt-2 font-bold text-slate-950 line-clamp-1 group-hover:text-indigo-600 transition">{course.title}</h4>
-                              <p className="mt-1 text-xs text-slate-500 font-medium">Giảng viên: {course.instructorName}</p>
+                              <p className="mt-1 text-xs text-slate-500 font-medium">Giáº£ng viĂªn: {course.instructorName}</p>
                             </div>
                             
                             <div className="mt-5 pt-4 border-t border-slate-100">
                               <div className="flex justify-between items-center text-xs font-bold mb-1.5">
-                                <span className="text-slate-500">Tiến độ học</span>
+                                <span className="text-slate-500">Tiáº¿n Ä‘á»™ há»c</span>
                                 <span className="text-indigo-600">{course.progress || 0}%</span>
                               </div>
                               <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden mb-4">
@@ -299,7 +300,7 @@ export function Profile() {
 
                               <Link to={`/student/learning/${course.id}`}>
                                 <Button className="w-full" size="sm">
-                                  <PlayCircle size={16} /> Tiếp tục học
+                                  <PlayCircle size={16} /> Tiáº¿p tá»¥c há»c
                                 </Button>
                               </Link>
                             </div>
@@ -315,18 +316,18 @@ export function Profile() {
               {isInstructor && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">Khóa học đang giảng dạy</h3>
+                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">KhĂ³a há»c Ä‘ang giáº£ng dáº¡y</h3>
                     <Link to="/instructor/courses" className="text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-                      Xem tất cả <ArrowRight size={14} />
+                      Xem táº¥t cáº£ <ArrowRight size={14} />
                     </Link>
                   </div>
 
                   {teachingCourses.length === 0 ? (
                     <div className="rounded-2xl border-2 border-dashed border-slate-200 py-12 text-center text-slate-400">
                       <BookOpen size={48} className="mx-auto text-slate-300 mb-3" />
-                      <p className="font-semibold text-slate-500">Bạn chưa tạo khóa học nào.</p>
+                      <p className="font-semibold text-slate-500">Báº¡n chÆ°a táº¡o khĂ³a há»c nĂ o.</p>
                       <Link to="/instructor/courses/create" className="mt-3 inline-block">
-                        <Button size="sm">Tạo khóa học ngay</Button>
+                        <Button size="sm">Táº¡o khĂ³a há»c ngay</Button>
                       </Link>
                     </div>
                   ) : (
@@ -341,12 +342,12 @@ export function Profile() {
                                 <span className="text-sm font-bold text-slate-900">{formatCurrency(course.price)}</span>
                               </div>
                               <h4 className="mt-3 font-bold text-slate-950 line-clamp-1">{course.title}</h4>
-                              <p className="mt-1.5 text-xs text-slate-500 font-semibold">{course.totalLessons} bài học · {course.studentsCount.toLocaleString("vi-VN")} học viên</p>
+                              <p className="mt-1.5 text-xs text-slate-500 font-semibold">{course.totalLessons} bĂ i há»c Â· {course.studentsCount.toLocaleString("vi-VN")} há»c viĂªn</p>
                             </div>
 
                             <div className="mt-5 pt-4 border-t border-slate-100 flex gap-2">
                               <Link to={`/instructor/courses/${course.id}/edit`} className="flex-1">
-                                <Button variant="secondary" className="w-full" size="sm">Chi tiết & Sửa</Button>
+                                <Button variant="secondary" className="w-full" size="sm">Chi tiáº¿t & Sá»­a</Button>
                               </Link>
                             </div>
                           </div>
@@ -360,23 +361,23 @@ export function Profile() {
               {/* ADMIN: Platform Shortcuts */}
               {isAdmin && (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-bold text-slate-900 tracking-tight">Lối tắt quản trị hệ thống</h3>
+                  <h3 className="text-xl font-bold text-slate-900 tracking-tight">Lá»‘i táº¯t quáº£n trá»‹ há»‡ thá»‘ng</h3>
                   <div className="grid gap-4 sm:grid-cols-2">
                     
                     <Link to="/admin/users" className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
                       <div className="grid h-12 w-12 place-items-center rounded-xl bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors">
                         <Users size={22} />
                       </div>
-                      <h4 className="mt-4 font-bold text-slate-950 text-base">Quản lý người dùng</h4>
-                      <p className="mt-1.5 text-xs text-slate-500 leading-relaxed font-semibold">Phê duyệt, đổi vai trò học viên/giảng viên, khóa và xóa người dùng vi phạm.</p>
+                      <h4 className="mt-4 font-bold text-slate-950 text-base">Quáº£n lĂ½ ngÆ°á»i dĂ¹ng</h4>
+                      <p className="mt-1.5 text-xs text-slate-500 leading-relaxed font-semibold">PhĂª duyá»‡t, Ä‘á»•i vai trĂ² há»c viĂªn/giáº£ng viĂªn, khĂ³a vĂ  xĂ³a ngÆ°á»i dĂ¹ng vi pháº¡m.</p>
                     </Link>
 
                     <Link to="/admin/courses" className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
                       <div className="grid h-12 w-12 place-items-center rounded-xl bg-sky-50 text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-colors">
                         <BookOpen size={22} />
                       </div>
-                      <h4 className="mt-4 font-bold text-slate-950 text-base">Duyệt khóa học</h4>
-                      <p className="mt-1.5 text-xs text-slate-500 leading-relaxed font-semibold">Kiểm duyệt nội dung bài giảng, video, phê duyệt các khóa học gửi lên.</p>
+                      <h4 className="mt-4 font-bold text-slate-950 text-base">Duyá»‡t khĂ³a há»c</h4>
+                      <p className="mt-1.5 text-xs text-slate-500 leading-relaxed font-semibold">Kiá»ƒm duyá»‡t ná»™i dung bĂ i giáº£ng, video, phĂª duyá»‡t cĂ¡c khĂ³a há»c gá»­i lĂªn.</p>
                     </Link>
                   </div>
                 </div>
@@ -391,30 +392,30 @@ export function Profile() {
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-slate-950 mb-5 border-b border-slate-100 pb-3 flex items-center gap-2">
                   <Settings size={18} className="text-slate-400" />
-                  Thông tin cá nhân
+                  ThĂ´ng tin cĂ¡ nhĂ¢n
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Họ và tên</span>
-                    <div className="mt-1 font-semibold text-slate-900">{user?.fullName || "Chưa cập nhật"}</div>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Há» vĂ  tĂªn</span>
+                    <div className="mt-1 font-semibold text-slate-900">{user?.fullName || "ChÆ°a cáº­p nháº­t"}</div>
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email liên lạc</span>
-                    <div className="mt-1 font-semibold text-slate-900">{user?.email || "Chưa cập nhật"}</div>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email liĂªn láº¡c</span>
+                    <div className="mt-1 font-semibold text-slate-900">{user?.email || "ChÆ°a cáº­p nháº­t"}</div>
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tên đăng nhập</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">TĂªn Ä‘Äƒng nháº­p</span>
                     <div className="mt-1 font-semibold text-slate-900">@{user?.username}</div>
                   </div>
                   <div className="flex gap-4 pt-2">
                     <div className="flex-1">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Trạng thái</span>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tráº¡ng thĂ¡i</span>
                       <div className="mt-1 font-semibold text-slate-900">
-                        <Badge variant="success">Đang hoạt động</Badge>
+                        <Badge variant="success">Äang hoáº¡t Ä‘á»™ng</Badge>
                       </div>
                     </div>
                     <div className="flex-1">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ngày tham gia</span>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">NgĂ y tham gia</span>
                       <div className="mt-1 font-semibold text-slate-900">{user?.createdAt || "2026-04-02"}</div>
                     </div>
                   </div>
@@ -425,31 +426,31 @@ export function Profile() {
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-slate-950 mb-5 border-b border-slate-100 pb-3 flex items-center gap-2">
                   <TrendingUp size={18} className="text-slate-400" />
-                  Hoạt động gần đây
+                  Hoáº¡t Ä‘á»™ng gáº§n Ä‘Ă¢y
                 </h3>
                 <div className="relative border-l border-slate-100 pl-4 ml-2 space-y-5 py-1">
                   
                   <div className="relative">
                     <div className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full border-2 border-white bg-indigo-600" />
-                    <span className="text-xs font-bold text-slate-400 block">5 phút trước</span>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">Xem hồ sơ cá nhân</p>
-                    <span className="text-xs text-slate-500">Xem thông tin và cập nhật giao diện.</span>
+                    <span className="text-xs font-bold text-slate-400 block">5 phĂºt trÆ°á»›c</span>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">Xem há»“ sÆ¡ cĂ¡ nhĂ¢n</p>
+                    <span className="text-xs text-slate-500">Xem thĂ´ng tin vĂ  cáº­p nháº­t giao diá»‡n.</span>
                   </div>
 
                   <div className="relative">
                     <div className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full border-2 border-white bg-slate-400" />
-                    <span className="text-xs font-bold text-slate-400 block">1 ngày trước</span>
+                    <span className="text-xs font-bold text-slate-400 block">1 ngĂ y trÆ°á»›c</span>
                     <p className="mt-1 text-sm font-semibold text-slate-900">
-                      {isStudent ? "Tiếp tục bài học 'React Props'" : isInstructor ? "Cập nhật bài viết khóa học" : "Đăng nhập hệ thống admin"}
+                      {isStudent ? "Tiáº¿p tá»¥c bĂ i há»c 'React Props'" : isInstructor ? "Cáº­p nháº­t bĂ i viáº¿t khĂ³a há»c" : "ÄÄƒng nháº­p há»‡ thá»‘ng admin"}
                     </p>
-                    <span className="text-xs text-slate-500">Được ghi nhận thành công từ IP: 113.22.45.67</span>
+                    <span className="text-xs text-slate-500">ÄÆ°á»£c ghi nháº­n thĂ nh cĂ´ng tá»« IP: 113.22.45.67</span>
                   </div>
 
                   <div className="relative">
                     <div className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full border-2 border-white bg-slate-400" />
-                    <span className="text-xs font-bold text-slate-400 block">3 ngày trước</span>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">Đăng nhập thành công</p>
-                    <span className="text-xs text-slate-500">Truy cập bằng thiết bị di động.</span>
+                    <span className="text-xs font-bold text-slate-400 block">3 ngĂ y trÆ°á»›c</span>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">ÄÄƒng nháº­p thĂ nh cĂ´ng</p>
+                    <span className="text-xs text-slate-500">Truy cáº­p báº±ng thiáº¿t bá»‹ di Ä‘á»™ng.</span>
                   </div>
 
                 </div>
@@ -472,7 +473,7 @@ export function Profile() {
                   <X size={18} />
                 </button>
 
-                <h3 className="text-lg font-bold text-slate-950 mb-4">Cập nhật thông tin cá nhân</h3>
+                <h3 className="text-lg font-bold text-slate-950 mb-4">Cáº­p nháº­t thĂ´ng tin cĂ¡ nhĂ¢n</h3>
                 
                 <form onSubmit={handleUpdateProfile} className="space-y-4">
                   <div
@@ -497,14 +498,14 @@ export function Profile() {
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                        <Camera size={15} /> Ảnh đại diện
+                        <Camera size={15} /> áº¢nh Ä‘áº¡i diá»‡n
                       </div>
                       <p className="mt-1 text-xs font-medium text-slate-500">
-                        {avatarFile ? avatarFile.name : "Kéo thả ảnh vào đây hoặc chọn ảnh từ máy."}
+                        {avatarFile ? avatarFile.name : "KĂ©o tháº£ áº£nh vĂ o Ä‘Ă¢y hoáº·c chá»n áº£nh tá»« mĂ¡y."}
                       </p>
                       <div className="mt-3">
                         <Button type="button" variant="secondary" size="sm" onClick={() => avatarInputRef.current?.click()}>
-                          Chọn ảnh
+                          Chá»n áº£nh
                         </Button>
                         <input
                           ref={avatarInputRef}
@@ -517,34 +518,34 @@ export function Profile() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700">Tên đăng nhập</label>
+                    <label className="block text-sm font-semibold text-slate-700">TĂªn Ä‘Äƒng nháº­p</label>
                     <input
                       type="text"
                       className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-semibold text-slate-500 outline-none"
                       value={`@${user?.username}`}
                       disabled
                     />
-                    <p className="mt-1 text-[10px] font-medium text-slate-400">Tên đăng nhập không thể thay đổi.</p>
+                    <p className="mt-1 text-[10px] font-medium text-slate-400">TĂªn Ä‘Äƒng nháº­p khĂ´ng thá»ƒ thay Ä‘á»•i.</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700">Họ và tên</label>
+                    <label className="block text-sm font-semibold text-slate-700">Há» vĂ  tĂªn</label>
                     <input
                       type="text"
                       className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-medium outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition"
                       value={fullNameInput}
                       onChange={(e) => setFullNameInput(e.target.value)}
-                      placeholder="Nhập họ và tên"
+                      placeholder="Nháº­p há» vĂ  tĂªn"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700">Email liên lạc</label>
+                    <label className="block text-sm font-semibold text-slate-700">Email liĂªn láº¡c</label>
                     <input
                       type="email"
                       className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-medium outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition"
                       value={emailInput}
                       onChange={(e) => setEmailInput(e.target.value)}
-                      placeholder="Nhập email"
+                      placeholder="Nháº­p email"
                       required
                     />
                   </div>
@@ -552,25 +553,25 @@ export function Profile() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                        <Lock size={15} /> Mật khẩu mới
+                        <Lock size={15} /> Máº­t kháº©u má»›i
                       </label>
                       <input
                         type="password"
                         className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-medium outline-none transition focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
                         value={passwordInput}
                         onChange={(e) => setPasswordInput(e.target.value)}
-                        placeholder="Để trống nếu không đổi"
+                        placeholder="Äá»ƒ trá»‘ng náº¿u khĂ´ng Ä‘á»•i"
                         autoComplete="new-password"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700">Xác nhận mật khẩu</label>
+                      <label className="block text-sm font-semibold text-slate-700">XĂ¡c nháº­n máº­t kháº©u</label>
                       <input
                         type="password"
                         className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-medium outline-none transition focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
                         value={confirmPasswordInput}
                         onChange={(e) => setConfirmPasswordInput(e.target.value)}
-                        placeholder="Nhập lại mật khẩu mới"
+                        placeholder="Nháº­p láº¡i máº­t kháº©u má»›i"
                         autoComplete="new-password"
                       />
                     </div>
@@ -578,10 +579,10 @@ export function Profile() {
 
                   <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
                     <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)}>
-                      Hủy
+                      Há»§y
                     </Button>
                     <Button type="submit" loading={profileSaving}>
-                      <Save size={16} /> Lưu thay đổi
+                      <Save size={16} /> LÆ°u thay Ä‘á»•i
                     </Button>
                   </div>
                 </form>
