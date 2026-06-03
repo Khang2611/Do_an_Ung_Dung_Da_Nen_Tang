@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, ChevronLeft, ChevronRight, FileText, PlayCircle } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getCourseById } from "../../api/courseApi";
-import { checkMyEnrollment, updateProgress } from "../../api/enrollmentApi";
+import { getCompletedLessonIds, getMyEnrollment, updateProgress } from "../../api/enrollmentApi";
 import { getLessonResources } from "../../api/resourceApi";
 import { Button } from "../../components/common/Button";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
@@ -26,14 +26,14 @@ export function Learning() {
   useEffect(() => {
     async function loadLearning() {
       try {
-        const enrolled = await checkMyEnrollment(courseId);
-        if (!enrolled) {
-          setError("Bạn chưa đăng ký khóa học này nên không thể xem bài học.");
-          return;
-        }
-        const item = await getCourseById(courseId);
+        const [, item, completedLessonIds] = await Promise.all([
+          getMyEnrollment(courseId),
+          getCourseById(courseId),
+          getCompletedLessonIds(courseId),
+        ]);
         setCourse(item);
         setLesson(item.lessons.find((entry) => entry.id === lessonId) || item.lessons[0]);
+        setCompleted(completedLessonIds);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Không thể tải bài học.");
       }

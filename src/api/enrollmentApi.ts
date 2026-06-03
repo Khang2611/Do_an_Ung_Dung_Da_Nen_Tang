@@ -42,13 +42,27 @@ function normalizeMyEnrollmentCourse(raw: any): Course {
   });
 }
 
-async function getMyEnrollment(courseId: string) {
+export async function getMyEnrollment(courseId: string) {
   const response = await axiosClient.get(ENROLLMENTS_ME);
   const enrollment = unwrap<any[]>(response).find(
     (item) => String(item.courseId) === String(courseId) && String(item.status || "").toUpperCase() !== "REJECTED",
   );
   if (!enrollment) throw new Error("Bạn chưa đăng ký khóa học này.");
   return enrollment;
+}
+
+export async function getCompletedLessonIds(courseId: string): Promise<string[]> {
+  if (USE_MOCK) {
+    const enrollment = mockEnrollments.find((item) => String(item.courseId) === String(courseId));
+    return enrollment?.completedLessons || [];
+  }
+
+  const enrollment = await getMyEnrollment(courseId);
+  const enrollmentId = enrollment.enrollmentId ?? enrollment.id;
+  const response = await axiosClient.get(`${LEARNING_PROGRESS}/enrollment/${enrollmentId}`);
+  return unwrap<any[]>(response)
+    .filter((item) => Boolean(item.isCompleted))
+    .map((item) => String(item.lessonId));
 }
 
 export async function enrollCourse(courseId: string) {
