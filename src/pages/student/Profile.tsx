@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { 
-  BookOpen, CheckCircle2, Target, UserRound, Mail, Calendar, 
+  BookOpen, Target, UserRound, Mail, Calendar, 
   Layers, Star, GraduationCap, Users, DollarSign, ArrowRight,
   TrendingUp, Award, ShieldCheck, Edit3, Settings, Save, X, PlayCircle, Camera, Lock
 } from "lucide-react";
@@ -147,11 +147,6 @@ export function Profile() {
   const avgProgress = enrolledCourses.length > 0 
     ? Math.round(enrolledCourses.reduce((sum, c) => sum + (c.progress || 0), 0) / enrolledCourses.length) 
     : 0;
-
-  const totalLessonsCompleted = enrolledCourses.length > 0
-    ? enrolledCourses.reduce((sum, c) => sum + Math.round((c.totalLessons * (c.progress || 0)) / 100), 0)
-    : 0;
-
   const totalStudyTime = enrolledCourses.length * 4; // simulated average of 4h per course
   const certificatesCount = enrolledCourses.filter(c => c.progress === 100).length;
 
@@ -222,10 +217,9 @@ export function Profile() {
             
             {/* Student Stats */}
             {isStudent && (
-              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 <StatCard label="Khóa đã đăng ký" value={enrolledCourses.length} icon={<BookOpen size={20} />} />
                 <StatCard label="Tiến độ trung bình" value={`${avgProgress}%`} icon={<Target size={20} />} tone="emerald" />
-                <StatCard label="Bài học hoàn thành" value={totalLessonsCompleted} icon={<CheckCircle2 size={20} />} tone="sky" />
                 <StatCard label="Chứng chỉ nhận được" value={certificatesCount} icon={<Award size={20} />} tone="amber" />
               </div>
             )}
