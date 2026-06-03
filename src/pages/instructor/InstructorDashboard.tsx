@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { AlertCircle, BookOpen, CheckCircle2, Clock, FileVideo, GraduationCap, Layers, PlusCircle, Upload } from "lucide-react";
+import { AlertCircle, BookOpen, CheckCircle2, Clock, FileVideo, GraduationCap, Layers, PlusCircle, Send, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getTeachingCourses } from "../../api/courseApi";
+import { getCourses } from "../../api/courseApi";
 import { Badge } from "../../components/common/Badge";
 import { Button } from "../../components/common/Button";
 import { PageHeader } from "../../components/common/PageHeader";
@@ -22,7 +22,7 @@ export function InstructorDashboard() {
   const [courses, setCourses] = useState<Course[]>([]);
 
   useEffect(() => {
-    getTeachingCourses().then(setCourses);
+    getCourses().then(setCourses);
   }, []);
 
   const stats = useMemo(() => {
@@ -31,6 +31,7 @@ export function InstructorDashboard() {
     return {
       total: courses.length,
       approved: byStatus("approved"),
+      pending: byStatus("pending_review"),
       draft: byStatus("draft"),
       students: courses.reduce((sum, course) => sum + course.studentsCount, 0),
       lessons: courses.reduce((sum, course) => sum + course.totalLessons, 0),
@@ -38,15 +39,11 @@ export function InstructorDashboard() {
     };
   }, [courses]);
 
+  const pendingCourses = courses.filter((course) => normalizeCourseStatus(course.status) === "pending_review");
   const draftCourses = courses.filter((course) => normalizeCourseStatus(course.status) === "draft");
   const missingVideoCourses = courses.filter((course) => {
     const videos = getVideoStats(course);
     return videos.uploaded < videos.total;
-  });
-  const attentionCourses = courses.filter((course) => {
-    const status = normalizeCourseStatus(course.status);
-    const videos = getVideoStats(course);
-    return status === "draft" || videos.uploaded < videos.total;
   });
 
   return (
@@ -57,9 +54,10 @@ export function InstructorDashboard() {
         action={<Link to="/instructor/courses/create"><Button><PlusCircle size={18} />Tạo khóa học</Button></Link>}
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Tổng khóa học" value={stats.total} icon={<BookOpen size={20} />} />
         <StatCard label="Đã xuất bản" value={stats.approved} icon={<CheckCircle2 size={20} />} tone="emerald" />
+        <StatCard label="Chờ duyệt" value={stats.pending} icon={<Send size={20} />} tone="amber" />
         <StatCard label="Bản nháp" value={stats.draft} icon={<Clock size={20} />} tone="sky" />
         <StatCard label="Tổng học viên" value={stats.students.toLocaleString("vi-VN")} icon={<GraduationCap size={20} />} tone="indigo" />
         <StatCard label="Bài học/video" value={`${stats.lessons}/${stats.videos}`} icon={<Layers size={20} />} tone="rose" />
@@ -98,26 +96,21 @@ export function InstructorDashboard() {
           <div className="mt-4 space-y-3">
             <Todo icon={AlertCircle} label="Hoàn thiện khóa học bản nháp" value={`${draftCourses.length} khóa`} />
             <Todo icon={Upload} label="Upload video cho bài học còn thiếu" value={`${missingVideoCourses.length} khóa`} />
+            <Todo icon={Send} label="Gửi khóa học chờ duyệt" value={`${draftCourses.length} khóa`} />
           </div>
         </section>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-950">Khóa cần hoàn thiện</h2>
+          <h2 className="text-lg font-bold text-slate-950">Nội dung chờ duyệt</h2>
           <div className="mt-4 space-y-3">
-            {attentionCourses.length ? attentionCourses.slice(0, 4).map((course) => {
-              const status = normalizeCourseStatus(course.status);
-              const videos = getVideoStats(course);
-              return (
-                <div key={course.id} className="flex items-center justify-between rounded-2xl bg-slate-50 p-3">
-                  <div className="font-semibold text-slate-900">{course.title}</div>
-                  <Badge variant={status === "draft" ? "warning" : "slate"}>
-                    {status === "draft" ? "Bản nháp" : `${videos.uploaded}/${videos.total} video`}
-                  </Badge>
-                </div>
-              );
-            }) : <p className="text-sm text-slate-500">Các khóa học hiện đã đủ thông tin chính.</p>}
+            {pendingCourses.length ? pendingCourses.slice(0, 4).map((course) => (
+              <div key={course.id} className="flex items-center justify-between rounded-2xl bg-amber-50 p-3">
+                <div className="font-semibold text-slate-900">{course.title}</div>
+                <Badge variant="warning">Chờ duyệt</Badge>
+              </div>
+            )) : <p className="text-sm text-slate-500">Không có nội dung đang chờ duyệt.</p>}
           </div>
         </section>
 
@@ -126,7 +119,7 @@ export function InstructorDashboard() {
           <div className="mt-4 space-y-4">
             <Activity icon={FileVideo} title="Cập nhật video bài học" time="Hôm nay" />
             <Activity icon={BookOpen} title="Chỉnh sửa nội dung khóa ReactJS" time="1 ngày trước" />
-            <Activity icon={Clock} title="Cập nhật cấu trúc bài học" time="3 ngày trước" />
+            <Activity icon={Send} title="Gửi khóa học UI/UX chờ duyệt" time="3 ngày trước" />
           </div>
         </section>
       </div>

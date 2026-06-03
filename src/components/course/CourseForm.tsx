@@ -1,7 +1,7 @@
 import { BookOpen, CheckCircle2, FileText, Image, Plus, Trash2, UploadCloud } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch, type Control, type FieldErrors, type UseFormRegister, type UseFormSetValue } from "react-hook-form";
-import { createCategory, getCategories, type CategoryItem } from "../../api/categoryApi";
+import { getCategories, type CategoryItem } from "../../api/categoryApi";
 import type { Chapter, Course } from "../../types/course";
 import { formatCurrency } from "../../utils/format";
 import { Badge } from "../common/Badge";
@@ -11,7 +11,7 @@ import { Input } from "../common/Input";
 import { VideoUploadWidget } from "../video/VideoUploadWidget";
 import { ResourceUploadWidget } from "./ResourceUploadWidget";
 
-type CourseFormValue = Pick<Course, "title" | "description" | "category" | "categoryId" | "level" | "price" | "thumbnail" | "chapters">;
+type CourseFormValue = Pick<Course, "title" | "description" | "categoryId" | "category" | "level" | "price" | "thumbnail" | "chapters">;
 
 interface Props {
   initialValue?: Partial<Course>;
@@ -134,8 +134,7 @@ function LessonFields({
 export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onSubmit }: Props) {
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [categoryLoadError, setCategoryLoadError] = useState("");
   const {
     register,
     handleSubmit,
@@ -148,8 +147,8 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
     defaultValues: {
       title: initialValue?.title || "",
       description: initialValue?.description || "",
-      category: initialValue?.category || "",
       categoryId: initialValue?.categoryId,
+      category: initialValue?.category || "Lập trình Web",
       level: initialValue?.level || "Cơ bản",
       price: initialValue?.price ?? 0,
       thumbnail: initialValue?.thumbnail || fallbackThumb,
@@ -178,52 +177,6 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
   const totalLessons = chapters.reduce((sum, chapter) => sum + (chapter.lessons?.length || 0), 0);
   const totalMinutes = chapters.flatMap((chapter) => chapter.lessons || []).reduce((sum, lesson) => sum + (Number(String(lesson.duration).match(/\d+/)?.[0]) || 0), 0);
   const videoCount = getVideoCount(chapters);
-
-  useEffect(() => {
-    getCategories().then(setCategories).catch(() => setCategories([]));
-  }, []);
-
-  useEffect(() => {
-    if (!categories.length || values.categoryId) return;
-    const match = categories.find((item) => item.name === values.category);
-    if (match) setValue("categoryId", match.categoryId, { shouldDirty: false, shouldValidate: true });
-  }, [categories, setValue, values.category, values.categoryId]);
-
-  const selectCategory = (category?: CategoryItem) => {
-    setValue("categoryId", category?.categoryId, { shouldDirty: true, shouldValidate: true });
-    setValue("category", category?.name || "", { shouldDirty: true, shouldValidate: true });
-    clearErrors("categoryId");
-  };
-
-  const handleCreateCategory = async () => {
-    const name = newCategoryName.trim();
-    if (!name) {
-      return;
-    }
-
-    const existing = categories.find((item) => item.name.toLowerCase() === name.toLowerCase());
-    if (existing) {
-      selectCategory(existing);
-      setNewCategoryName("");
-      return;
-    }
-
-    try {
-      setCreatingCategory(true);
-      const created = await createCategory(name);
-      setCategories((items) => {
-        if (items.some((item) => item.categoryId === created.categoryId)) return items;
-        return [...items, created];
-      });
-      selectCategory(created);
-      setNewCategoryName("");
-    } catch (err) {
-      setError("categoryId", { message: err instanceof Error ? err.message : "Không thể tạo danh mục." });
-    } finally {
-      setCreatingCategory(false);
-    }
-  };
-
   const checklist = useMemo(
     () => [
       ["Có tên khóa học", Boolean(values.title?.trim())],
@@ -234,6 +187,35 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
     ],
     [values.title, values.description, values.thumbnail, values.price, totalLessons],
   );
+
+  useEffect(() => {
+    let mounted = true;
+
+    getCategories()
+      .then((items) => {
+        if (!mounted) return;
+        setCategories(items);
+        setCategoryLoadError("");
+
+        const selected =
+          items.find((item) => item.categoryId === initialValue?.categoryId) ||
+          items.find((item) => item.name === initialValue?.category) ||
+          items[0];
+
+        if (selected) {
+          setValue("categoryId", selected.categoryId, { shouldValidate: true });
+          setValue("category", selected.name, { shouldValidate: true });
+        }
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        setCategoryLoadError(err instanceof Error ? err.message : "Không thể tải danh mục khóa học.");
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [initialValue?.category, initialValue?.categoryId, setValue]);
 
   const submit = async (formValues: CourseFormValue) => {
     try {
@@ -246,9 +228,13 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
         setError("root", { message: "Khóa học cần có ít nhất 1 bài học." });
         return;
       }
+      if (!formValues.categoryId) {
+        setError("categoryId", { message: "Vui lòng chọn danh mục." });
+        return;
+      }
       await onSubmit({
         ...formValues,
-        category: formValues.category || "Chưa phân loại",
+        categoryId: Number(formValues.categoryId),
         price: Number(formValues.price),
         chapters: formValues.chapters.map((chapter) => ({
           ...chapter,
@@ -307,42 +293,36 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <Input label="Tên khóa học" error={errors.title?.message} {...register("title", { required: "Vui lòng nhập tên khóa học." })} />
-            <label>
+            <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-slate-700">Danh mục</span>
-              <input type="hidden" {...register("categoryId", { valueAsNumber: true })} />
-              <select
-                value={values.categoryId ? String(values.categoryId) : ""}
-                onChange={(event) => {
-                  const selected = categories.find((item) => String(item.categoryId) === event.target.value);
-                  selectCategory(selected);
-                }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
-              >
-                <option value="">Không chọn danh mục</option>
-                {categories.map((category) => (
-                  <option key={category.categoryId} value={category.categoryId}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-              <div className="mt-2 flex gap-2">
-                <input
-                  value={newCategoryName}
-                  onChange={(event) => setNewCategoryName(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      void handleCreateCategory();
-                    }
-                  }}
-                  placeholder="Hoặc nhập danh mục mới"
-                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
-                />
-                <Button type="button" variant="secondary" size="sm" disabled={creatingCategory} onClick={() => void handleCreateCategory()}>
-                  <Plus size={14} /> {creatingCategory ? "Đang tạo" : "Tạo"}
-                </Button>
-              </div>
+              <Controller
+                control={control}
+                name="categoryId"
+                rules={{ required: "Vui lòng chọn danh mục." }}
+                render={({ field }) => (
+                  <select
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
+                    value={field.value || ""}
+                    onChange={(event) => {
+                      const categoryId = Number(event.target.value);
+                      const selected = categories.find((item) => item.categoryId === categoryId);
+                      field.onChange(categoryId);
+                      setValue("category", selected?.name || "", { shouldDirty: true, shouldValidate: true });
+                    }}
+                    disabled={!categories.length}
+                  >
+                    <option value="">{categories.length ? "Chọn danh mục" : "Đang tải danh mục..."}</option>
+                    {categories.map((category) => (
+                      <option key={category.categoryId} value={category.categoryId}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              />
+              <input type="hidden" {...register("category", { required: "Vui lòng chọn danh mục." })} />
               {errors.categoryId?.message && <span className="mt-1 block text-sm text-rose-600">{errors.categoryId.message}</span>}
+              {categoryLoadError && <span className="mt-1 block text-sm text-rose-600">{categoryLoadError}</span>}
             </label>
             <Input label="Trình độ" {...register("level")} />
             <Input
@@ -429,7 +409,7 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
         </div>
         <div className="mt-4">
           <h3 className="mt-3 line-clamp-2 text-lg font-extrabold text-slate-950">{values.title || "Tên khóa học"}</h3>
-          <p className="mt-1 text-sm font-semibold text-slate-500">{values.category || "Chưa phân loại"} · {values.level || "Trình độ"}</p>
+          <p className="mt-1 text-sm font-semibold text-slate-500">{values.category || "Danh mục"} · {values.level || "Trình độ"}</p>
           <div className="mt-3 text-2xl font-extrabold text-indigo-700">{formatCurrency(Number(values.price || 0))}</div>
         </div>
         <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
