@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { BookOpen, GraduationCap, Home, LogOut, PlusCircle, ShieldCheck, UserRound, Users, Video } from "lucide-react";
+import { BookOpen, GraduationCap, Home, LogOut, PlusCircle, ShieldCheck, UserRound, Users } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { formatRole } from "../../utils/format";
@@ -22,7 +22,6 @@ const items: Record<"admin" | "instructor", Item[]> = {
     { to: "/instructor/dashboard", label: "Tổng quan giảng viên", icon: Home },
     { to: "/instructor/courses", label: "Khóa học của tôi", icon: BookOpen, match: (path) => path === "/instructor/courses" },
     { to: "/instructor/courses/create", label: "Tạo khóa học", icon: PlusCircle, match: (path) => path === "/instructor/courses/create" },
-    { to: "/instructor/courses", label: "Bài học / Video", icon: Video, match: (path) => path.includes("/lessons") },
   ],
 };
 

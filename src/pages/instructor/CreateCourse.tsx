@@ -30,8 +30,8 @@ export function CreateCourse() {
             studentsCount: 0,
           });
 
-          showToast("Da tao khoa hoc va tai tep dinh kem len thanh cong.", "success");
-          navigate(`/instructor/courses/${created.id}/edit`);
+          showToast(`Đã tạo khóa học "${created.title}".`, "success");
+          navigate("/instructor/courses");
         }}
       />
     </div>

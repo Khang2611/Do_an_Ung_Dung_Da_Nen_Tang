@@ -16,7 +16,6 @@ import { CreateCourse } from "../pages/instructor/CreateCourse";
 import { EditCourse } from "../pages/instructor/EditCourse";
 import { InstructorCourses } from "../pages/instructor/InstructorCourses";
 import { InstructorDashboard } from "../pages/instructor/InstructorDashboard";
-import { LessonManager } from "../pages/instructor/LessonManager";
 import { CourseDetail } from "../pages/student/CourseDetail";
 import { CourseList } from "../pages/student/CourseList";
 import { Home } from "../pages/student/Home";
@@ -60,7 +59,7 @@ export function AppRoutes() {
             <Route path="courses" element={<InstructorCourses />} />
             <Route path="courses/create" element={<CreateCourse />} />
             <Route path="courses/:id/edit" element={<EditCourse />} />
-            <Route path="courses/:courseId/lessons" element={<LessonManager />} />
+            <Route path="courses/:courseId/lessons" element={<Navigate to="/instructor/courses" replace />} />
           </Route>
         </Route>
         <Route element={<RoleRoute allowed={["admin"]} />}>

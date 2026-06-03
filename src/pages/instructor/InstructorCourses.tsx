@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, Clock, Edit3, Filter, PlusCircle, Search, Trash2, Upload, Users } from "lucide-react";
 import { Link } from "react-router-dom";
-import { deleteCourse, getCourses } from "../../api/courseApi";
+import { deleteCourse, getTeachingCourses } from "../../api/courseApi";
 import { Badge } from "../../components/common/Badge";
 import { Button } from "../../components/common/Button";
 import { ConfirmDialog } from "../../components/common/ConfirmDialog";
@@ -31,7 +31,7 @@ export function InstructorCourses() {
   const [deleteTarget, setDeleteTarget] = useState<Course | null>(null);
 
   useEffect(() => {
-    getCourses()
+    getTeachingCourses()
       .then(setCourses)
       .catch((err) => setError(err instanceof Error ? err.message : "Không thể tải khóa học."))
       .finally(() => setLoading(false));
@@ -123,8 +123,6 @@ export function InstructorCourses() {
                     </div>
                     <div className="mt-5 flex flex-wrap gap-2">
                       <Link to={`/instructor/courses/${course.id}/edit`}><Button variant="secondary" size="sm"><Edit3 size={14} />Sửa</Button></Link>
-                      <Link to={`/instructor/courses/${course.id}/lessons`}><Button variant="secondary" size="sm"><BookOpen size={14} />Quản lý bài học</Button></Link>
-                      <Link to={`/instructor/courses/${course.id}/lessons`}><Button variant="secondary" size="sm"><Upload size={14} />Upload video</Button></Link>
                       <Button variant="danger" size="sm" onClick={() => setDeleteTarget(course)}><Trash2 size={14} />Xóa</Button>
                     </div>
                   </div>

@@ -1,6 +1,7 @@
 import { BookOpen, CheckCircle2, FileText, Image, Plus, Trash2, UploadCloud } from "lucide-react";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch, type Control, type FieldErrors, type UseFormRegister, type UseFormSetValue } from "react-hook-form";
+import { createCategory, getCategories, type CategoryItem } from "../../api/categoryApi";
 import type { Chapter, Course } from "../../types/course";
 import { formatCurrency } from "../../utils/format";
 import { Badge } from "../common/Badge";
@@ -10,7 +11,7 @@ import { Input } from "../common/Input";
 import { VideoUploadWidget } from "../video/VideoUploadWidget";
 import { ResourceUploadWidget } from "./ResourceUploadWidget";
 
-type CourseFormValue = Pick<Course, "title" | "description" | "category" | "level" | "price" | "thumbnail" | "chapters">;
+type CourseFormValue = Pick<Course, "title" | "description" | "category" | "categoryId" | "level" | "price" | "thumbnail" | "chapters">;
 
 interface Props {
   initialValue?: Partial<Course>;
@@ -132,6 +133,9 @@ function LessonFields({
 
 export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onSubmit }: Props) {
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
   const {
     register,
     handleSubmit,
@@ -145,6 +149,7 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
       title: initialValue?.title || "",
       description: initialValue?.description || "",
       category: initialValue?.category || "Lập trình Web",
+      categoryId: initialValue?.categoryId,
       level: initialValue?.level || "Cơ bản",
       price: initialValue?.price ?? 0,
       thumbnail: initialValue?.thumbnail || fallbackThumb,
@@ -173,6 +178,53 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
   const totalLessons = chapters.reduce((sum, chapter) => sum + (chapter.lessons?.length || 0), 0);
   const totalMinutes = chapters.flatMap((chapter) => chapter.lessons || []).reduce((sum, lesson) => sum + (Number(String(lesson.duration).match(/\d+/)?.[0]) || 0), 0);
   const videoCount = getVideoCount(chapters);
+
+  useEffect(() => {
+    getCategories().then(setCategories).catch(() => setCategories([]));
+  }, []);
+
+  useEffect(() => {
+    if (!categories.length || values.categoryId) return;
+    const match = categories.find((item) => item.name === values.category);
+    if (match) setValue("categoryId", match.categoryId, { shouldDirty: false, shouldValidate: true });
+  }, [categories, setValue, values.category, values.categoryId]);
+
+  const selectCategory = (category?: CategoryItem) => {
+    setValue("categoryId", category?.categoryId, { shouldDirty: true, shouldValidate: true });
+    setValue("category", category?.name || "", { shouldDirty: true, shouldValidate: true });
+    if (category) clearErrors("categoryId");
+  };
+
+  const handleCreateCategory = async () => {
+    const name = newCategoryName.trim();
+    if (!name) {
+      setError("categoryId", { message: "Nhập tên danh mục mới hoặc chọn danh mục có sẵn." });
+      return;
+    }
+
+    const existing = categories.find((item) => item.name.toLowerCase() === name.toLowerCase());
+    if (existing) {
+      selectCategory(existing);
+      setNewCategoryName("");
+      return;
+    }
+
+    try {
+      setCreatingCategory(true);
+      const created = await createCategory(name);
+      setCategories((items) => {
+        if (items.some((item) => item.categoryId === created.categoryId)) return items;
+        return [...items, created];
+      });
+      selectCategory(created);
+      setNewCategoryName("");
+    } catch (err) {
+      setError("categoryId", { message: err instanceof Error ? err.message : "Không thể tạo danh mục." });
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
   const checklist = useMemo(
     () => [
       ["Có tên khóa học", Boolean(values.title?.trim())],
@@ -193,6 +245,10 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
       const hasLesson = formValues.chapters.some((chapter) => chapter.lessons?.length);
       if (!hasLesson) {
         setError("root", { message: "Khóa học cần có ít nhất 1 bài học." });
+        return;
+      }
+      if (!formValues.categoryId) {
+        setError("categoryId", { message: "Vui lòng chọn danh mục." });
         return;
       }
       await onSubmit({
@@ -255,7 +311,43 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <Input label="Tên khóa học" error={errors.title?.message} {...register("title", { required: "Vui lòng nhập tên khóa học." })} />
-            <Input label="Danh mục" error={errors.category?.message} {...register("category", { required: "Vui lòng nhập danh mục." })} />
+            <label>
+              <span className="mb-1.5 block text-sm font-medium text-slate-700">Danh mục</span>
+              <input type="hidden" {...register("categoryId", { valueAsNumber: true, required: "Vui lòng chọn danh mục." })} />
+              <select
+                value={values.categoryId ? String(values.categoryId) : ""}
+                onChange={(event) => {
+                  const selected = categories.find((item) => String(item.categoryId) === event.target.value);
+                  selectCategory(selected);
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
+              >
+                <option value="">Chọn danh mục</option>
+                {categories.map((category) => (
+                  <option key={category.categoryId} value={category.categoryId}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <div className="mt-2 flex gap-2">
+                <input
+                  value={newCategoryName}
+                  onChange={(event) => setNewCategoryName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      void handleCreateCategory();
+                    }
+                  }}
+                  placeholder="Hoặc nhập danh mục mới"
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
+                />
+                <Button type="button" variant="secondary" size="sm" disabled={creatingCategory} onClick={() => void handleCreateCategory()}>
+                  <Plus size={14} /> {creatingCategory ? "Đang tạo" : "Tạo"}
+                </Button>
+              </div>
+              {errors.categoryId?.message && <span className="mt-1 block text-sm text-rose-600">{errors.categoryId.message}</span>}
+            </label>
             <Input label="Trình độ" {...register("level")} />
             <Input
               label="Giá"

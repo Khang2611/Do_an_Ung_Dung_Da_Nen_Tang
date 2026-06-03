@@ -1,4 +1,4 @@
-export type CourseStatus = "draft" | "published" | "pending" | "hidden" | "approved" | "rejected" | "DRAFT" | "PENDING_REVIEW" | "APPROVED" | "REJECTED";
+export type CourseStatus = "draft" | "published" | "hidden" | "approved" | "rejected" | "DRAFT" | "APPROVED" | "REJECTED";
 
 export interface Lesson {
   id: string;
@@ -36,6 +36,7 @@ export interface Course {
   title: string;
   description: string;
   category: string;
+  categoryId?: number;
   level: string;
   price: number;
   discountPrice?: number;
@@ -46,6 +47,7 @@ export interface Course {
   rating: number;
   studentsCount: number;
   status: CourseStatus | string;
+  teacherId?: number;
   progress?: number;
   chapters: Chapter[];
   lessons: Lesson[];

@@ -54,6 +54,7 @@ export function normalizeCourse(raw: any, chapters: Chapter[] = []): Course {
     title: raw?.title || "Khóa học",
     description: raw?.description || "",
     category,
+    categoryId: raw?.category?.categoryId ?? raw?.categoryId,
     level: raw?.level || "Cơ bản",
     price: Number(raw?.price || 0),
     thumbnail: raw?.thumbnail || fallbackThumb,
@@ -63,6 +64,7 @@ export function normalizeCourse(raw: any, chapters: Chapter[] = []): Course {
     rating: Number(raw?.rating || 0),
     studentsCount: Number(raw?.studentsCount || 0),
     status: raw?.status || "published",
+    teacherId: raw?.teacherId,
     progress: raw?.progress,
     chapters,
     lessons,
@@ -121,7 +123,6 @@ async function createBackendLesson(chapterId: string, lesson: Lesson, orderIndex
     chapterId: Number(chapterId),
     title: lesson.title,
     content: lesson.content,
-    videoUrl: lesson.videoUrl || "",
     duration: toMinutes(lesson.duration),
     orderIndex,
   });
@@ -132,7 +133,6 @@ async function updateBackendLesson(lesson: Lesson, orderIndex: number) {
   const response = await axiosClient.put(`${LESSONS}/${lesson.id}`, {
     title: lesson.title,
     content: lesson.content,
-    videoUrl: lesson.videoUrl || "",
     duration: toMinutes(lesson.duration),
     orderIndex,
   });
@@ -202,6 +202,18 @@ export async function getCourses(params?: CourseFilters): Promise<Course[]> {
   );
 }
 
+export async function getTeachingCourses(params?: CourseFilters): Promise<Course[]> {
+  if (USE_MOCK) return filterCourses(params);
+  const response = await axiosClient.get(`${COURSES}/teaching`, { params });
+  const rawCourses = asArray(unwrap<any[] | any>(response));
+  return Promise.all(
+    rawCourses.map(async (item) => {
+      const chapters = await getBackendChapters(String(item?.courseId ?? item?.id));
+      return normalizeCourse(item, chapters);
+    }),
+  );
+}
+
 export async function getCourseById(id: string): Promise<Course> {
   if (USE_MOCK) {
     const course = mockCourses.find((item) => item.id === id);
@@ -233,7 +245,7 @@ export async function createCourse(data: Partial<Course>) {
     description: data.description,
     thumbnail: data.thumbnail,
     price: data.price,
-    categoryId: (data as any).categoryId,
+    categoryId: data.categoryId,
   });
   const course = normalizeCourse(unwrap<any>(response));
   const chapters = await syncCourseContent(course.id, data.chapters || []);
@@ -254,21 +266,10 @@ export async function updateCourse(id: string, data: Partial<Course>) {
     description: data.description,
     thumbnail: data.thumbnail,
     price: data.price,
-    categoryId: (data as any).categoryId,
+    categoryId: data.categoryId,
   });
   const chapters = await syncCourseContent(id, data.chapters || []);
   return normalizeCourse(unwrap<any>(response), chapters);
-}
-
-export async function submitCourseForReview(id: string) {
-  if (USE_MOCK) {
-    const index = mockCourses.findIndex((item) => item.id === id);
-    if (index < 0) throw new Error("Không tìm thấy khóa học.");
-    mockCourses[index] = { ...mockCourses[index], status: "PENDING_REVIEW" };
-    return mockCourses[index];
-  }
-  const response = await axiosClient.patch(`${COURSES}/${id}/submit-review`);
-  return normalizeCourse(unwrap<any>(response));
 }
 
 export async function deleteCourse(id: string) {

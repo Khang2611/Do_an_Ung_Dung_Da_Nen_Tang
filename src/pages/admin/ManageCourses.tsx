@@ -166,7 +166,6 @@ export function ManageCourses() {
           >
             <option value="all">Tất cả trạng thái</option>
             <option value="published">Đã xuất bản</option>
-            <option value="approved">Đã xuất bản</option>
             <option value="draft">Bản nháp</option>
             <option value="hidden">Đã ẩn</option>
           </select>
