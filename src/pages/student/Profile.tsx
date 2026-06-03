@@ -361,7 +361,7 @@ export function Profile() {
               {isAdmin && (
                 <div className="space-y-4">
                   <h3 className="text-xl font-bold text-slate-900 tracking-tight">Lối tắt quản trị hệ thống</h3>
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     
                     <Link to="/admin/users" className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
                       <div className="grid h-12 w-12 place-items-center rounded-xl bg-rose-50 text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-colors">
@@ -378,15 +378,6 @@ export function Profile() {
                       <h4 className="mt-4 font-bold text-slate-950 text-base">Duyệt khóa học</h4>
                       <p className="mt-1.5 text-xs text-slate-500 leading-relaxed font-semibold">Kiểm duyệt nội dung bài giảng, video, phê duyệt các khóa học gửi lên.</p>
                     </Link>
-
-                    <Link to="/admin/enrollments" className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-                      <div className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                        <GraduationCap size={22} />
-                      </div>
-                      <h4 className="mt-4 font-bold text-slate-950 text-base">Quản lý đăng ký</h4>
-                      <p className="mt-1.5 text-xs text-slate-500 leading-relaxed font-semibold">Theo dõi đăng ký học tập, phê duyệt ghi danh khóa học trả phí.</p>
-                    </Link>
-
                   </div>
                 </div>
               )}

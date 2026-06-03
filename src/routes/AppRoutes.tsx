@@ -10,7 +10,6 @@ import { Forbidden } from "../pages/Forbidden";
 import { NotFound } from "../pages/NotFound";
 import { AdminDashboard } from "../pages/admin/AdminDashboard";
 import { ManageCourses } from "../pages/admin/ManageCourses";
-import { ManageEnrollments } from "../pages/admin/ManageEnrollments";
 import { ManageUsers } from "../pages/admin/ManageUsers";
 import { CreateCourse } from "../pages/instructor/CreateCourse";
 import { EditCourse } from "../pages/instructor/EditCourse";
@@ -68,7 +67,7 @@ export function AppRoutes() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<ManageUsers />} />
             <Route path="courses" element={<ManageCourses />} />
-            <Route path="enrollments" element={<ManageEnrollments />} />
+            <Route path="enrollments" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
         </Route>
       </Route>

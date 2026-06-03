@@ -1,30 +1,27 @@
 import { useEffect, useState } from "react";
-import { BookOpen, CreditCard, GraduationCap, Users } from "lucide-react";
+import { BookOpen, CreditCard, Users } from "lucide-react";
 import { getCourses } from "../../api/courseApi";
-import { getEnrollments } from "../../api/enrollmentApi";
 import { getUsers } from "../../api/userApi";
 import { Badge } from "../../components/common/Badge";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
 import { Loading } from "../../components/common/Loading";
 import { PageHeader } from "../../components/common/PageHeader";
 import { StatCard } from "../../components/common/StatCard";
-import type { Course, Enrollment } from "../../types/course";
+import type { Course } from "../../types/course";
 import type { User } from "../../types/user";
 import { formatCurrency, formatRole, formatStatus, getRoleBadgeVariant, getStatusBadgeVariant } from "../../utils/format";
 
 export function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([getUsers(), getCourses(), getEnrollments()])
-      .then(([userData, courseData, enrollmentData]) => {
+    Promise.all([getUsers(), getCourses()])
+      .then(([userData, courseData]) => {
         setUsers(userData);
         setCourses(courseData);
-        setEnrollments(enrollmentData);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Không thể tải dashboard."))
       .finally(() => setLoading(false));
@@ -36,11 +33,10 @@ export function AdminDashboard() {
 
   return (
     <div>
-      <PageHeader title="Dashboard quản trị" description="Tổng quan người dùng, khóa học, đăng ký và doanh thu." />
-      <div className="grid gap-4 md:grid-cols-4">
+      <PageHeader title="Dashboard quản trị" description="Tổng quan người dùng, khóa học và doanh thu." />
+      <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="Người dùng" value={users.length} icon={<Users size={20} />} />
         <StatCard label="Khóa học" value={courses.length} icon={<BookOpen size={20} />} tone="sky" />
-        <StatCard label="Đăng ký" value={enrollments.length} icon={<GraduationCap size={20} />} tone="emerald" />
         <StatCard label="Doanh thu" value={formatCurrency(revenue)} icon={<CreditCard size={20} />} tone="amber" />
       </div>
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
@@ -60,7 +56,10 @@ export function AdminDashboard() {
           <div className="divide-y divide-slate-100">
             {users.slice(0, 5).map((u) => (
               <div key={u.id} className="flex items-center justify-between gap-4 p-4 text-sm hover:bg-slate-50">
-                <div><div className="font-medium text-slate-900">{u.fullName}</div><div className="text-slate-500">{u.email}</div></div>
+                <div>
+                  <div className="font-medium text-slate-900">{u.fullName}</div>
+                  <div className="text-slate-500">{u.email}</div>
+                </div>
                 <Badge variant={getRoleBadgeVariant(u.role)}>{formatRole(u.role)}</Badge>
               </div>
             ))}
