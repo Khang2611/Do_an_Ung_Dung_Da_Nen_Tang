@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { FileText, Loader2, Trash2, UploadCloud } from "lucide-react";
-import { deleteLessonResource, uploadLessonResource } from "../../api/resourceApi";
+import { Download, FileText, Loader2, Trash2, UploadCloud } from "lucide-react";
+import { deleteLessonResource, getResourceDownloadUrl, uploadLessonResource } from "../../api/resourceApi";
 import type { LessonResource } from "../../types/course";
 import { Button } from "../common/Button";
 
@@ -39,7 +39,7 @@ export function ResourceUploadWidget({
       const uploaded = await Promise.all(selected.map((file) => uploadLessonResource(lessonId, file)));
       onResourcesChange([...resources, ...uploaded]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Tải lên tài liệu thất bại.");
+      setError(err instanceof Error ? err.message : "Tai len tai lieu that bai.");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -55,7 +55,7 @@ export function ResourceUploadWidget({
       await deleteLessonResource(resourceId);
       onResourcesChange(resources.filter((item) => item.id !== resourceId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể xóa tài liệu.");
+      setError(err instanceof Error ? err.message : "Khong the xoa tai lieu.");
     }
   };
 
@@ -64,11 +64,11 @@ export function ResourceUploadWidget({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
           <FileText size={16} className="text-indigo-600" />
-          Tài liệu bài học
+          Tai lieu khoa hoc
         </div>
         <Button type="button" variant="secondary" size="sm" onClick={() => inputRef.current?.click()} disabled={uploading}>
           {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud size={14} />}
-          Tải tài liệu
+          Tai tai lieu
         </Button>
       </div>
 
@@ -87,6 +87,9 @@ export function ResourceUploadWidget({
           <div key={resource.id} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm">
             <span className="min-w-0 truncate font-medium text-slate-700">{resource.name}</span>
             <div className="flex shrink-0 gap-1">
+              <a href={getResourceDownloadUrl(resource.id)} target="_blank" rel="noreferrer">
+                <Button type="button" variant="ghost" size="sm"><Download size={14} /></Button>
+              </a>
               <Button type="button" variant="ghost" size="sm" className="text-rose-600" onClick={() => void removeResource(resource.id)}>
                 <Trash2 size={14} />
               </Button>
@@ -104,7 +107,7 @@ export function ResourceUploadWidget({
         ))}
 
         {!resources.length && !pendingFiles.length && (
-          <p className="text-xs font-medium text-slate-400">Chưa có tài liệu đính kèm.</p>
+          <p className="text-xs font-medium text-slate-400">Chua co tai lieu dinh kem.</p>
         )}
       </div>
     </div>

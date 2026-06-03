@@ -1,15 +1,19 @@
-import axiosClient, { unwrap } from "./axiosClient";
+import axiosClient, { API_BASE_URL, unwrap } from "./axiosClient";
 import type { LessonResource } from "../types/course";
 
 function normalizeResource(raw: any): LessonResource {
   return {
     id: String(raw?.resourceId ?? raw?.id),
     lessonId: String(raw?.lessonId ?? ""),
-    name: raw?.name || "Tài liệu",
+    name: raw?.name || "Tai lieu",
     url: raw?.url || "",
     type: raw?.type || "",
     createdDate: raw?.createdDate,
   };
+}
+
+export function getResourceDownloadUrl(resourceId: string | number) {
+  return `${API_BASE_URL}/api/resources/${resourceId}/download`;
 }
 
 export async function getLessonResources(lessonId: string | number): Promise<LessonResource[]> {

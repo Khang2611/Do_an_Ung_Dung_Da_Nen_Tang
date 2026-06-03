@@ -2,9 +2,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, Loader2, LogIn, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getSignedVideoUrl } from "../../api/videoApi";
-import { detectCocCocBrowser } from "../../utils/browser";
 import { Button } from "../common/Button";
-import { UnsupportedBrowserNotice } from "./UnsupportedBrowserNotice";
 
 interface SignedVideoPlayerProps {
   lessonId: string | number;
@@ -25,8 +23,6 @@ export function SignedVideoPlayer({ lessonId, title, className, onError }: Signe
   const [signedUrl, setSignedUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [browserStatus, setBrowserStatus] = useState<"checking" | "allowed" | "blocked">("checking");
-  const blockedBrowser = browserStatus === "blocked";
 
   const fail = (message: string) => {
     setError(message);
@@ -42,22 +38,6 @@ export function SignedVideoPlayer({ lessonId, title, className, onError }: Signe
   };
 
   useEffect(() => {
-    let active = true;
-
-    setBrowserStatus("checking");
-    detectCocCocBrowser().then((blocked) => {
-      if (!active) return;
-      setBrowserStatus(blocked ? "blocked" : "allowed");
-    });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (browserStatus !== "allowed") return;
-
     let active = true;
     setError("");
     setSignedUrl("");
@@ -81,11 +61,7 @@ export function SignedVideoPlayer({ lessonId, title, className, onError }: Signe
     return () => {
       active = false;
     };
-  }, [lessonId, browserStatus]);
-
-  if (blockedBrowser) {
-    return <UnsupportedBrowserNotice className={className} />;
-  }
+  }, [lessonId]);
 
   if (error) {
     return (
@@ -115,7 +91,7 @@ export function SignedVideoPlayer({ lessonId, title, className, onError }: Signe
         <div className="absolute inset-0 z-10 grid place-items-center bg-slate-950 text-white">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Loader2 className="h-5 w-5 animate-spin" />
-            {browserStatus === "checking" ? "Đang kiểm tra trình duyệt..." : "Đang tải video..."}
+            Đang tải video...
           </div>
         </div>
       )}
