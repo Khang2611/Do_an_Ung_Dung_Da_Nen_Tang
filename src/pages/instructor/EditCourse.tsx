@@ -15,7 +15,7 @@ export function EditCourse() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    getCourseById(id).then(setCourse).catch((err) => setError(err instanceof Error ? err.message : "Không thể tải khóa học."));
+    getCourseById(id, { includeResources: true }).then(setCourse).catch((err) => setError(err instanceof Error ? err.message : "Không thể tải khóa học."));
   }, [id]);
 
   if (error) return <ErrorMessage message={error} />;

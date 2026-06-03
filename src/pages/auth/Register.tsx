@@ -93,7 +93,7 @@ export function Register() {
             <Input
               label="Mật khẩu"
               type={showPassword ? "text" : "password"}
-              placeholder="Tối thiểu 6 ký tự"
+              placeholder="VD: EduFlow@123"
               autoComplete="new-password"
               icon={<LockKeyhole size={17} />}
               error={errors.password?.message}
@@ -109,7 +109,11 @@ export function Register() {
               }
               {...register("password", {
                 required: "Vui lòng nhập mật khẩu.",
-                minLength: { value: 6, message: "Mật khẩu tối thiểu 6 ký tự." },
+                minLength: { value: 8, message: "Mật khẩu tối thiểu 8 ký tự." },
+                pattern: {
+                  value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+                  message: "Mật khẩu cần có chữ hoa, chữ thường, số và ký tự đặc biệt.",
+                },
               })}
             />
             <Input

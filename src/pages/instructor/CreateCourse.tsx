@@ -12,20 +12,20 @@ export function CreateCourse() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Tao khoa hoc"
-        description="Nhap thong tin khoa hoc, bai hoc, video va tai lieu dinh kem."
-        action={<Link to="/instructor/courses"><Button variant="secondary"><X size={16} />Huy</Button></Link>}
+        title="Tạo khóa học"
+        description="Nhập thông tin khóa học, bài học, video và tài liệu đính kèm."
+        action={<Link to="/instructor/courses"><Button variant="secondary"><X size={16} />Hủy</Button></Link>}
       />
       <CourseForm
-        submitLabel="Luu khoa hoc"
+        submitLabel="Lưu khóa học"
         onSubmit={async (value) => {
           const lessons = value.chapters.flatMap((chapter) => chapter.lessons);
           const created = await createCourse({
             ...value,
             lessons,
             totalLessons: lessons.length,
-            duration: "Dang cap nhat",
-            instructorName: "Giang vien",
+            duration: "Đang cập nhật",
+            instructorName: "Giảng viên",
             rating: 0,
             studentsCount: 0,
           });

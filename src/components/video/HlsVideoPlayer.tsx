@@ -4,7 +4,9 @@ import { AlertCircle, Loader2, LogIn, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../../api/axiosClient";
 import { getVideoPlaylistUrl } from "../../api/videoApi";
+import { detectCocCocBrowser } from "../../utils/browser";
 import { Button } from "../common/Button";
+import { UnsupportedBrowserNotice } from "./UnsupportedBrowserNotice";
 
 interface HlsVideoPlayerProps {
   lessonId: string | number;
@@ -32,6 +34,8 @@ export function HlsVideoPlayer({
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [browserStatus, setBrowserStatus] = useState<"checking" | "allowed" | "blocked">("checking");
+  const blockedBrowser = browserStatus === "blocked";
 
   const fail = (message: string) => {
     setError(message);
@@ -47,6 +51,22 @@ export function HlsVideoPlayer({
   };
 
   useEffect(() => {
+    let active = true;
+
+    setBrowserStatus("checking");
+    detectCocCocBrowser().then((blocked) => {
+      if (!active) return;
+      setBrowserStatus(blocked ? "blocked" : "allowed");
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (browserStatus !== "allowed") return;
+
     const video = videoRef.current;
     if (!video) return;
 
@@ -109,7 +129,11 @@ export function HlsVideoPlayer({
       video.removeAttribute("src");
       video.load();
     };
-  }, [lessonId, onError]);
+  }, [lessonId, onError, browserStatus]);
+
+  if (blockedBrowser) {
+    return <UnsupportedBrowserNotice className={className} />;
+  }
 
   if (error) {
     return (
@@ -143,7 +167,7 @@ export function HlsVideoPlayer({
         <div className="absolute inset-0 z-10 grid place-items-center bg-slate-950 text-white">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Loader2 className="h-5 w-5 animate-spin" />
-            Đang tải video...
+            {browserStatus === "checking" ? "Đang kiểm tra trình duyệt..." : "Đang tải video..."}
           </div>
         </div>
       )}

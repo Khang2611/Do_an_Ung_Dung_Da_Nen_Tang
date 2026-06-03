@@ -148,7 +148,7 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
     defaultValues: {
       title: initialValue?.title || "",
       description: initialValue?.description || "",
-      category: initialValue?.category || "Lập trình Web",
+      category: initialValue?.category || "",
       categoryId: initialValue?.categoryId,
       level: initialValue?.level || "Cơ bản",
       price: initialValue?.price ?? 0,
@@ -192,13 +192,12 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
   const selectCategory = (category?: CategoryItem) => {
     setValue("categoryId", category?.categoryId, { shouldDirty: true, shouldValidate: true });
     setValue("category", category?.name || "", { shouldDirty: true, shouldValidate: true });
-    if (category) clearErrors("categoryId");
+    clearErrors("categoryId");
   };
 
   const handleCreateCategory = async () => {
     const name = newCategoryName.trim();
     if (!name) {
-      setError("categoryId", { message: "Nhập tên danh mục mới hoặc chọn danh mục có sẵn." });
       return;
     }
 
@@ -247,12 +246,9 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
         setError("root", { message: "Khóa học cần có ít nhất 1 bài học." });
         return;
       }
-      if (!formValues.categoryId) {
-        setError("categoryId", { message: "Vui lòng chọn danh mục." });
-        return;
-      }
       await onSubmit({
         ...formValues,
+        category: formValues.category || "Chưa phân loại",
         price: Number(formValues.price),
         chapters: formValues.chapters.map((chapter) => ({
           ...chapter,
@@ -313,7 +309,7 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
             <Input label="Tên khóa học" error={errors.title?.message} {...register("title", { required: "Vui lòng nhập tên khóa học." })} />
             <label>
               <span className="mb-1.5 block text-sm font-medium text-slate-700">Danh mục</span>
-              <input type="hidden" {...register("categoryId", { valueAsNumber: true, required: "Vui lòng chọn danh mục." })} />
+              <input type="hidden" {...register("categoryId", { valueAsNumber: true })} />
               <select
                 value={values.categoryId ? String(values.categoryId) : ""}
                 onChange={(event) => {
@@ -322,7 +318,7 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
                 }}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25"
               >
-                <option value="">Chọn danh mục</option>
+                <option value="">Không chọn danh mục</option>
                 {categories.map((category) => (
                   <option key={category.categoryId} value={category.categoryId}>
                     {category.name}
@@ -433,7 +429,7 @@ export function CourseForm({ initialValue, submitLabel = "Lưu khóa học", onS
         </div>
         <div className="mt-4">
           <h3 className="mt-3 line-clamp-2 text-lg font-extrabold text-slate-950">{values.title || "Tên khóa học"}</h3>
-          <p className="mt-1 text-sm font-semibold text-slate-500">{values.category || "Danh mục"} · {values.level || "Trình độ"}</p>
+          <p className="mt-1 text-sm font-semibold text-slate-500">{values.category || "Chưa phân loại"} · {values.level || "Trình độ"}</p>
           <div className="mt-3 text-2xl font-extrabold text-indigo-700">{formatCurrency(Number(values.price || 0))}</div>
         </div>
         <div className="mt-5 grid grid-cols-2 gap-3 text-sm">

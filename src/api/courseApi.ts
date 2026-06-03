@@ -7,6 +7,10 @@ import type { Chapter, Course, CourseFilters, Lesson } from "../types/course";
 
 const fallbackThumb = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80";
 
+interface BackendChapterOptions {
+  includeResources?: boolean;
+}
+
 function toMinutes(value?: string) {
   const match = String(value || "").match(/\d+/);
   return match ? Number(match[0]) : 10;
@@ -82,7 +86,7 @@ function filterCourses(params?: CourseFilters) {
   });
 }
 
-async function getBackendChapters(courseId: string): Promise<Chapter[]> {
+async function getBackendChapters(courseId: string, options: BackendChapterOptions = {}): Promise<Chapter[]> {
   const chapterResponse = await axiosClient.get(`${CHAPTERS}/course/${courseId}`);
   const rawChapters = asArray(unwrap<any[] | any>(chapterResponse));
   return Promise.all(
@@ -92,7 +96,7 @@ async function getBackendChapters(courseId: string): Promise<Chapter[]> {
       const lessons = await Promise.all(
         asArray(unwrap<any[] | any>(lessonResponse)).map(async (lesson) => {
           const normalized = normalizeLesson(lesson);
-          normalized.resources = await getLessonResources(normalized.id);
+          normalized.resources = options.includeResources ? await getLessonResources(normalized.id) : [];
           return normalized;
         }),
       );
@@ -139,53 +143,87 @@ async function updateBackendLesson(lesson: Lesson, orderIndex: number) {
   return normalizeLesson(unwrap<any>(response));
 }
 
-async function syncCourseContent(courseId: string, chapters: Chapter[] = []) {
-  const syncedChapters: Chapter[] = [];
-  const existingChapters = await getBackendChapters(courseId);
+async function saveBackendChapter(courseId: string, chapter: Chapter, orderIndex: number) {
+  return isPersistedId(chapter.id, "ch-")
+    ? updateBackendChapter(chapter, orderIndex)
+    : createBackendChapter(courseId, chapter, orderIndex);
+}
 
-  for (const [chapterIndex, chapter] of chapters.entries()) {
-    const savedChapter = isPersistedId(chapter.id, "ch-")
-      ? await updateBackendChapter(chapter, chapterIndex + 1)
-      : await createBackendChapter(courseId, chapter, chapterIndex + 1);
-    const existingLessons = existingChapters.find((item) => item.id === savedChapter.id)?.lessons || [];
-    const syncedLessons: Lesson[] = [];
+async function saveBackendLesson(chapterId: string, lesson: Lesson, orderIndex: number) {
+  return isPersistedId(lesson.id, "ls-")
+    ? updateBackendLesson(lesson, orderIndex)
+    : createBackendLesson(chapterId, lesson, orderIndex);
+}
 
-    for (const [lessonIndex, lesson] of chapter.lessons.entries()) {
-      const savedLesson = isPersistedId(lesson.id, "ls-")
-        ? await updateBackendLesson(lesson, lessonIndex + 1)
-        : await createBackendLesson(savedChapter.id, lesson, lessonIndex + 1);
-      if (lesson.pendingVideoFile) {
-        const videoResponse = await uploadLessonVideo(savedLesson.id, lesson.pendingVideoFile);
-        savedLesson.videoUrl = videoResponse?.result?.videoUrl || videoResponse?.result || videoResponse?.data?.videoUrl || videoResponse?.data || savedLesson.videoUrl;
-        savedLesson.hasVideo = Boolean(savedLesson.videoUrl);
-        savedLesson.videoStatus = savedLesson.videoUrl ? "ready" : savedLesson.videoStatus;
-      }
-      if (lesson.pendingResourceFiles?.length) {
-        const uploadedResources = await Promise.all(lesson.pendingResourceFiles.map((file) => uploadLessonResource(savedLesson.id, file)));
-        savedLesson.resources = [...(savedLesson.resources || []), ...uploadedResources];
-      } else {
-        savedLesson.resources = await getLessonResources(savedLesson.id);
-      }
-      syncedLessons.push(savedLesson);
-    }
+function extractUploadedVideoUrl(response: any, fallback = "") {
+  return response?.result?.videoUrl
+    || response?.result
+    || response?.data?.videoUrl
+    || response?.data
+    || fallback;
+}
 
-    const keptLessonIds = new Set(syncedLessons.map((lesson) => lesson.id));
-    await Promise.all(
-      existingLessons
-        .filter((lesson) => isPersistedId(lesson.id) && !keptLessonIds.has(lesson.id))
-        .map((lesson) => axiosClient.delete(`${LESSONS}/${lesson.id}`)),
-    );
+async function syncPendingLessonFiles(savedLesson: Lesson, sourceLesson: Lesson) {
+  const lesson = { ...savedLesson };
 
-    syncedChapters.push({ ...savedChapter, lessons: syncedLessons });
+  if (sourceLesson.pendingVideoFile) {
+    const videoResponse = await uploadLessonVideo(lesson.id, sourceLesson.pendingVideoFile);
+    lesson.videoUrl = extractUploadedVideoUrl(videoResponse, lesson.videoUrl);
+    lesson.hasVideo = Boolean(lesson.videoUrl);
+    lesson.videoStatus = lesson.videoUrl ? "ready" : lesson.videoStatus;
   }
 
+  if (sourceLesson.pendingResourceFiles?.length) {
+    const uploadedResources = await Promise.all(sourceLesson.pendingResourceFiles.map((file) => uploadLessonResource(lesson.id, file)));
+    lesson.resources = [...(sourceLesson.resources || lesson.resources || []), ...uploadedResources];
+  } else {
+    lesson.resources = await getLessonResources(lesson.id);
+  }
+
+  return lesson;
+}
+
+async function deleteRemovedLessons(existingLessons: Lesson[], syncedLessons: Lesson[]) {
+  const keptLessonIds = new Set(syncedLessons.map((lesson) => lesson.id));
+  await Promise.all(
+    existingLessons
+      .filter((lesson) => isPersistedId(lesson.id) && !keptLessonIds.has(lesson.id))
+      .map((lesson) => axiosClient.delete(`${LESSONS}/${lesson.id}`)),
+  );
+}
+
+async function deleteRemovedChapters(existingChapters: Chapter[], syncedChapters: Chapter[]) {
   const keptChapterIds = new Set(syncedChapters.map((chapter) => chapter.id));
   await Promise.all(
     existingChapters
       .filter((chapter) => isPersistedId(chapter.id) && !keptChapterIds.has(chapter.id))
       .map((chapter) => axiosClient.delete(`${CHAPTERS}/${chapter.id}`)),
   );
+}
 
+async function syncChapterContent(courseId: string, chapter: Chapter, chapterIndex: number, existingChapters: Chapter[]) {
+  const savedChapter = await saveBackendChapter(courseId, chapter, chapterIndex + 1);
+  const existingLessons = existingChapters.find((item) => item.id === savedChapter.id)?.lessons || [];
+  const syncedLessons: Lesson[] = [];
+
+  for (const [lessonIndex, lesson] of chapter.lessons.entries()) {
+    const savedLesson = await saveBackendLesson(savedChapter.id, lesson, lessonIndex + 1);
+    syncedLessons.push(await syncPendingLessonFiles(savedLesson, lesson));
+  }
+
+  await deleteRemovedLessons(existingLessons, syncedLessons);
+  return { ...savedChapter, lessons: syncedLessons };
+}
+
+async function syncCourseContent(courseId: string, chapters: Chapter[] = []) {
+  const existingChapters = await getBackendChapters(courseId);
+  const syncedChapters: Chapter[] = [];
+
+  for (const [chapterIndex, chapter] of chapters.entries()) {
+    syncedChapters.push(await syncChapterContent(courseId, chapter, chapterIndex, existingChapters));
+  }
+
+  await deleteRemovedChapters(existingChapters, syncedChapters);
   return syncedChapters;
 }
 
@@ -214,13 +252,13 @@ export async function getTeachingCourses(params?: CourseFilters): Promise<Course
   );
 }
 
-export async function getCourseById(id: string): Promise<Course> {
+export async function getCourseById(id: string, options: BackendChapterOptions = {}): Promise<Course> {
   if (USE_MOCK) {
     const course = mockCourses.find((item) => item.id === id);
     if (!course) throw new Error("Không tìm thấy khóa học.");
     return course;
   }
-  const [courseResponse, chapters] = await Promise.all([axiosClient.get(`${COURSES}/${id}`), getBackendChapters(id)]);
+  const [courseResponse, chapters] = await Promise.all([axiosClient.get(`${COURSES}/${id}`), getBackendChapters(id, options)]);
   return normalizeCourse(unwrap<any>(courseResponse), chapters);
 }
 
