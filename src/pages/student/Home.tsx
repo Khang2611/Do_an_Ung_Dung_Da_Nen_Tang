@@ -203,7 +203,6 @@ export function Home() {
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">Học theo lộ trình, luyện tập bằng bài kiểm tra, theo dõi tiến độ và học video chất lượng cao trên EduFlow.</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link to="/courses"><Button className="h-12 px-6"><Rocket size={18} />Khám phá khóa học</Button></Link>
-              <Button className="h-12 px-6 bg-white text-slate-950 hover:bg-slate-100" onClick={() => scrollTo("counseling")}>Nhận tư vấn miễn phí</Button>
             </div>
           </div>
 
