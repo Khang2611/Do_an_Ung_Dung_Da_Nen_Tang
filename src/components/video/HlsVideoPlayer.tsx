@@ -151,7 +151,10 @@ export function HlsVideoPlayer({
       <video
         ref={videoRef}
         controls
+        controlsList="nodownload noplaybackrate"
+        disablePictureInPicture
         className="aspect-video w-full bg-slate-950"
+        onContextMenu={(event) => event.preventDefault()}
         title={title}
       />
     </div>

@@ -95,7 +95,17 @@ export function SignedVideoPlayer({ lessonId, title, className, onError }: Signe
           </div>
         </div>
       )}
-      {signedUrl && <video src={signedUrl} controls className="aspect-video w-full bg-slate-950" title={title} />}
+      {signedUrl && (
+        <video
+          src={signedUrl}
+          controls
+          controlsList="nodownload noplaybackrate"
+          disablePictureInPicture
+          className="aspect-video w-full bg-slate-950"
+          onContextMenu={(event) => event.preventDefault()}
+          title={title}
+        />
+      )}
     </div>
   );
 }

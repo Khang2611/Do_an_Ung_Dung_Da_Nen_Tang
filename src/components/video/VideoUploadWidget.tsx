@@ -170,7 +170,15 @@ export function VideoUploadWidget({ lessonId, lessonTitle, initialVideoUrl, init
               <X size={18} />
             </button>
             {pendingPreviewUrl ? (
-              <video src={pendingPreviewUrl} controls className="aspect-video w-full rounded-xl bg-slate-950" title={lessonTitle || "Video bài học"} />
+              <video
+                src={pendingPreviewUrl}
+                controls
+                controlsList="nodownload noplaybackrate"
+                disablePictureInPicture
+                className="aspect-video w-full rounded-xl bg-slate-950"
+                onContextMenu={(event) => event.preventDefault()}
+                title={lessonTitle || "Video bài học"}
+              />
             ) : (
               <LessonVideoPlayer lessonId={lessonId} videoUrl={videoUrl} title={lessonTitle || "Video bài học"} />
             )}
